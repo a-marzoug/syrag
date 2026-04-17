@@ -1,5 +1,6 @@
 from fastrag.app import FastRAG, app, create_app
 from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 from fastrag.schemas import (
     Citation,
     IngestRequest,
@@ -15,6 +16,9 @@ __all__ = [
     "FastRAG",
     "IngestRequest",
     "IngestResponse",
+    "InMemoryEmbedder",
+    "InMemoryLLM",
+    "InMemoryVectorStore",
     "LLM",
     "QueryRequest",
     "RAGResponse",
