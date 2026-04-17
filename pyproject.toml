@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastrag"
+version = "0.1.0"
+description = "Production-first FastAPI foundation for the FastRAG framework."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.136.0",
+    "pydantic-settings>=2.13.1",
+    "uvicorn[standard]>=0.44.0",
+]
+
+[project.scripts]
+fastrag = "fastrag.main:run"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=1.20.1",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+    "ruff>=0.15.11",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fastrag"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+packages = ["fastrag"]
+mypy_path = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+
+[tool.uv]
+default-groups = ["dev"]
+package = true
