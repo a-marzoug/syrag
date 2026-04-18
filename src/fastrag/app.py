@@ -14,6 +14,7 @@ from fastrag.config import Settings, get_settings
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.registry import ComponentRegistry
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from fastrag.services import PipelineService
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
@@ -38,6 +39,7 @@ class FastRAG:
     ) -> None:
         self.settings = settings
         self.registry = ComponentRegistry()
+        self.pipeline = PipelineService()
         self.api = FastAPI(
             title=title,
             version=version,
@@ -48,6 +50,7 @@ class FastRAG:
             middleware=middleware,
         )
         self.api.state.fastrag = self
+        self.api.state.pipeline = self.pipeline
         self.api.state.registry = self.registry
         self._register_system_routes()
 
@@ -108,15 +111,12 @@ class FastRAG:
         def decorator(handler: QueryHandler) -> QueryHandler:
             async def endpoint(request: QueryRequest) -> RAGResponse:
                 resolved_request = await self._resolve_query_request(handler(request))
-                query_embedding = (await resolved_embedder.embed([resolved_request.query]))[0]
-                context = await resolved_vector_store.query(
-                    query_embedding=query_embedding,
-                    top_k=resolved_request.top_k,
-                    collection=resolved_request.collection,
-                    tenant_id=resolved_request.tenant_id,
-                    filters=resolved_request.filters,
+                return await self.pipeline.run_query(
+                    request=resolved_request,
+                    embedder=resolved_embedder,
+                    vector_store=resolved_vector_store,
+                    llm=resolved_llm,
                 )
-                return await resolved_llm.generate(query=resolved_request, context=context)
 
             endpoint.__name__ = handler.__name__
             endpoint.__doc__ = handler.__doc__
@@ -140,20 +140,10 @@ class FastRAG:
         def decorator(handler: IngestHandler) -> IngestHandler:
             async def endpoint(request: IngestRequest) -> IngestResponse:
                 resolved_request = await self._resolve_ingest_request(handler(request))
-                embeddings = await resolved_embedder.embed(resolved_request.documents)
-                metadata = self._expand_ingest_metadata(resolved_request)
-                await resolved_vector_store.upsert(
-                    documents=resolved_request.documents,
-                    embeddings=embeddings,
-                    collection=resolved_request.collection,
-                    tenant_id=resolved_request.tenant_id,
-                    metadata=metadata,
-                )
-                return IngestResponse(
-                    status="completed",
-                    ingested_documents=len(resolved_request.documents),
-                    collection=resolved_request.collection,
-                    tenant_id=resolved_request.tenant_id,
+                return await self.pipeline.run_ingest(
+                    request=resolved_request,
+                    embedder=resolved_embedder,
+                    vector_store=resolved_vector_store,
                 )
 
             endpoint.__name__ = handler.__name__
@@ -202,20 +192,6 @@ class FastRAG:
             resolved_result = result
 
         return resolved_result
-
-    def _expand_ingest_metadata(self, request: IngestRequest) -> list[dict[str, Any]]:
-        if len(request.documents) == 1:
-            return [dict(request.metadata)]
-
-        source_id = request.metadata.get("source_id")
-        metadata_items: list[dict[str, Any]] = []
-        for index, _document in enumerate(request.documents):
-            metadata = dict(request.metadata)
-            if isinstance(source_id, str) and source_id.strip():
-                metadata["source_id"] = f"{source_id.strip()}-{index}"
-            metadata_items.append(metadata)
-
-        return metadata_items
 
     def _resolve_embedder(self, component: Embedder | str) -> Embedder:
         if isinstance(component, str):
