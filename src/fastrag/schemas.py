@@ -52,3 +52,14 @@ class RAGResponse(FastRAGSchema):
     answer: str = Field(min_length=1)
     citations: list[Citation] = Field(default_factory=list)
     usage: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorDetail(FastRAGSchema):
+    code: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    stage: str = Field(min_length=1)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorResponse(FastRAGSchema):
+    error: ErrorDetail

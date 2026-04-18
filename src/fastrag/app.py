@@ -7,13 +7,21 @@ from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 from starlette.types import Receive, Scope, Send
 
 from fastrag.config import Settings, get_settings
+from fastrag.errors import FastRAGError
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.registry import ComponentRegistry
-from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from fastrag.schemas import (
+    ErrorDetail,
+    ErrorResponse,
+    IngestRequest,
+    IngestResponse,
+    QueryRequest,
+    RAGResponse,
+)
 from fastrag.services import PipelineService
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
@@ -52,6 +60,7 @@ class FastRAG:
         self.api.state.fastrag = self
         self.api.state.pipeline = self.pipeline
         self.api.state.registry = self.registry
+        self._register_exception_handlers()
         self._register_system_routes()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -161,6 +170,22 @@ class FastRAG:
 
     def register_llm(self, name: str, component: LLM) -> None:
         self.registry.register_llm(name, component)
+
+    def _register_exception_handlers(self) -> None:
+        @self.api.exception_handler(FastRAGError)
+        async def handle_fastrag_error(
+            _request: Request,
+            exc: FastRAGError,
+        ) -> JSONResponse:
+            response = ErrorResponse(
+                error=ErrorDetail(
+                    code=exc.code,
+                    message=exc.message,
+                    stage=exc.stage,
+                    details=exc.details,
+                )
+            )
+            return JSONResponse(status_code=exc.status_code, content=response.model_dump())
 
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])

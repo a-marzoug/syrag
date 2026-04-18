@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
+from fastrag.errors import PipelineStageError
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 
@@ -16,15 +17,41 @@ class PipelineService:
         vector_store: VectorStore,
         llm: LLM,
     ) -> RAGResponse:
-        query_embedding = (await embedder.embed([request.query]))[0]
-        context = await vector_store.query(
-            query_embedding=query_embedding,
-            top_k=request.top_k,
-            collection=request.collection,
-            tenant_id=request.tenant_id,
-            filters=request.filters,
-        )
-        return await llm.generate(query=request, context=context)
+        try:
+            query_embedding = (await embedder.embed([request.query]))[0]
+        except Exception as exc:
+            raise PipelineStageError(
+                code="embedding_failed",
+                message="Failed to embed the query.",
+                stage="embed",
+                details={"component": type(embedder).__name__},
+            ) from exc
+
+        try:
+            context = await vector_store.query(
+                query_embedding=query_embedding,
+                top_k=request.top_k,
+                collection=request.collection,
+                tenant_id=request.tenant_id,
+                filters=request.filters,
+            )
+        except Exception as exc:
+            raise PipelineStageError(
+                code="retrieval_failed",
+                message="Failed to retrieve supporting documents.",
+                stage="retrieve",
+                details={"component": type(vector_store).__name__},
+            ) from exc
+
+        try:
+            return await llm.generate(query=request, context=context)
+        except Exception as exc:
+            raise PipelineStageError(
+                code="generation_failed",
+                message="Failed to generate a grounded response.",
+                stage="generate",
+                details={"component": type(llm).__name__},
+            ) from exc
 
     async def run_ingest(
         self,
@@ -33,14 +60,32 @@ class PipelineService:
         embedder: Embedder,
         vector_store: VectorStore,
     ) -> IngestResponse:
-        embeddings = await embedder.embed(request.documents)
-        await vector_store.upsert(
-            documents=request.documents,
-            embeddings=embeddings,
-            collection=request.collection,
-            tenant_id=request.tenant_id,
-            metadata=self._expand_ingest_metadata(request),
-        )
+        try:
+            embeddings = await embedder.embed(request.documents)
+        except Exception as exc:
+            raise PipelineStageError(
+                code="embedding_failed",
+                message="Failed to embed the ingest documents.",
+                stage="embed",
+                details={"component": type(embedder).__name__},
+            ) from exc
+
+        try:
+            await vector_store.upsert(
+                documents=request.documents,
+                embeddings=embeddings,
+                collection=request.collection,
+                tenant_id=request.tenant_id,
+                metadata=self._expand_ingest_metadata(request),
+            )
+        except Exception as exc:
+            raise PipelineStageError(
+                code="storage_failed",
+                message="Failed to persist embedded documents.",
+                stage="store",
+                details={"component": type(vector_store).__name__},
+            ) from exc
+
         return IngestResponse(
             status="completed",
             ingested_documents=len(request.documents),
