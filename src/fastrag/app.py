@@ -12,6 +12,7 @@ from starlette.types import Receive, Scope, Send
 
 from fastrag.config import Settings, get_settings
 from fastrag.errors import FastRAGError
+from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.registry import ComponentRegistry
 from fastrag.schemas import (
@@ -47,7 +48,8 @@ class FastRAG:
     ) -> None:
         self.settings = settings
         self.registry = ComponentRegistry()
-        self.pipeline = PipelineService()
+        self.observability = ObservabilityHub()
+        self.pipeline = PipelineService(observability=self.observability)
         self.api = FastAPI(
             title=title,
             version=version,
@@ -58,6 +60,7 @@ class FastRAG:
             middleware=middleware,
         )
         self.api.state.fastrag = self
+        self.api.state.observability = self.observability
         self.api.state.pipeline = self.pipeline
         self.api.state.registry = self.registry
         self._register_exception_handlers()
@@ -170,6 +173,9 @@ class FastRAG:
 
     def register_llm(self, name: str, component: LLM) -> None:
         self.registry.register_llm(name, component)
+
+    def add_event_listener(self, listener: EventListener) -> None:
+        self.observability.add_listener(listener)
 
     def _register_exception_handlers(self) -> None:
         @self.api.exception_handler(FastRAGError)
