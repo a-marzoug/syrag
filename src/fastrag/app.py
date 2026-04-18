@@ -12,10 +12,11 @@ from starlette.types import Receive, Scope, Send
 
 from fastrag.config import Settings, get_settings
 from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.schemas import QueryRequest, RAGResponse
+from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
+IngestHandler = Callable[[IngestRequest], IngestRequest | Awaitable[IngestRequest]]
 QueryHandler = Callable[[QueryRequest], QueryRequest | Awaitable[QueryRequest]]
 
 
@@ -123,6 +124,46 @@ class FastRAG:
 
         return decorator
 
+    def ingest(
+        self,
+        path: str,
+        *,
+        embedder: Embedder,
+        vector_store: VectorStore,
+        tags: Sequence[str | Enum] | None = None,
+    ) -> Callable[[IngestHandler], IngestHandler]:
+        self._validate_ingest_components(
+            embedder=embedder,
+            vector_store=vector_store,
+        )
+        route_tags: list[str | Enum] = list(tags) if tags is not None else ["ingest"]
+
+        def decorator(handler: IngestHandler) -> IngestHandler:
+            async def endpoint(request: IngestRequest) -> IngestResponse:
+                resolved_request = await self._resolve_ingest_request(handler(request))
+                embeddings = await embedder.embed(resolved_request.documents)
+                metadata = self._expand_ingest_metadata(resolved_request)
+                await vector_store.upsert(
+                    documents=resolved_request.documents,
+                    embeddings=embeddings,
+                    collection=resolved_request.collection,
+                    tenant_id=resolved_request.tenant_id,
+                    metadata=metadata,
+                )
+                return IngestResponse(
+                    status="completed",
+                    ingested_documents=len(resolved_request.documents),
+                    collection=resolved_request.collection,
+                    tenant_id=resolved_request.tenant_id,
+                )
+
+            endpoint.__name__ = handler.__name__
+            endpoint.__doc__ = handler.__doc__
+            self.api.post(path, response_model=IngestResponse, tags=route_tags)(endpoint)
+            return handler
+
+        return decorator
+
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])
         async def healthcheck() -> dict[str, str]:
@@ -143,6 +184,31 @@ class FastRAG:
 
         return resolved_result
 
+    async def _resolve_ingest_request(
+        self,
+        result: IngestRequest | Awaitable[IngestRequest],
+    ) -> IngestRequest:
+        if isawaitable(result):
+            resolved_result = await result
+        else:
+            resolved_result = result
+
+        return resolved_result
+
+    def _expand_ingest_metadata(self, request: IngestRequest) -> list[dict[str, Any]]:
+        if len(request.documents) == 1:
+            return [dict(request.metadata)]
+
+        source_id = request.metadata.get("source_id")
+        metadata_items: list[dict[str, Any]] = []
+        for index, _document in enumerate(request.documents):
+            metadata = dict(request.metadata)
+            if isinstance(source_id, str) and source_id.strip():
+                metadata["source_id"] = f"{source_id.strip()}-{index}"
+            metadata_items.append(metadata)
+
+        return metadata_items
+
     def _validate_query_components(
         self,
         *,
@@ -153,6 +219,15 @@ class FastRAG:
         self._validate_component(embedder, Embedder, "embedder")
         self._validate_component(vector_store, VectorStore, "vector_store")
         self._validate_component(llm, LLM, "llm")
+
+    def _validate_ingest_components(
+        self,
+        *,
+        embedder: Embedder,
+        vector_store: VectorStore,
+    ) -> None:
+        self._validate_component(embedder, Embedder, "embedder")
+        self._validate_component(vector_store, VectorStore, "vector_store")
 
     def _validate_component(
         self,
