@@ -1,6 +1,13 @@
 from fastrag.app import FastRAG, app, create_app
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from fastrag.registry import (
+    ComponentAlreadyRegisteredError,
+    ComponentNotFoundError,
+    ComponentRegistry,
+    ComponentValidationError,
+    RegistryError,
+)
 from fastrag.schemas import (
     Citation,
     IngestRequest,
@@ -11,6 +18,10 @@ from fastrag.schemas import (
 )
 
 __all__ = [
+    "ComponentAlreadyRegisteredError",
+    "ComponentNotFoundError",
+    "ComponentRegistry",
+    "ComponentValidationError",
     "Citation",
     "Embedder",
     "FastRAG",
@@ -22,6 +33,7 @@ __all__ = [
     "LLM",
     "QueryRequest",
     "RAGResponse",
+    "RegistryError",
     "RetrievedDocument",
     "VectorStore",
     "app",

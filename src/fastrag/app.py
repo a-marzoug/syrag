@@ -12,6 +12,7 @@ from starlette.types import Receive, Scope, Send
 
 from fastrag.config import Settings, get_settings
 from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.registry import ComponentRegistry
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
@@ -36,6 +37,7 @@ class FastRAG:
         middleware: list[Middleware] | None = None,
     ) -> None:
         self.settings = settings
+        self.registry = ComponentRegistry()
         self.api = FastAPI(
             title=title,
             version=version,
@@ -46,6 +48,7 @@ class FastRAG:
             middleware=middleware,
         )
         self.api.state.fastrag = self
+        self.api.state.registry = self.registry
         self._register_system_routes()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -92,30 +95,28 @@ class FastRAG:
         self,
         path: str,
         *,
-        embedder: Embedder,
-        vector_store: VectorStore,
-        llm: LLM,
+        embedder: Embedder | str,
+        vector_store: VectorStore | str,
+        llm: LLM | str,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[QueryHandler], QueryHandler]:
-        self._validate_query_components(
-            embedder=embedder,
-            vector_store=vector_store,
-            llm=llm,
-        )
+        resolved_embedder = self._resolve_embedder(embedder)
+        resolved_vector_store = self._resolve_vector_store(vector_store)
+        resolved_llm = self._resolve_llm(llm)
         route_tags: list[str | Enum] = list(tags) if tags is not None else ["query"]
 
         def decorator(handler: QueryHandler) -> QueryHandler:
             async def endpoint(request: QueryRequest) -> RAGResponse:
                 resolved_request = await self._resolve_query_request(handler(request))
-                query_embedding = (await embedder.embed([resolved_request.query]))[0]
-                context = await vector_store.query(
+                query_embedding = (await resolved_embedder.embed([resolved_request.query]))[0]
+                context = await resolved_vector_store.query(
                     query_embedding=query_embedding,
                     top_k=resolved_request.top_k,
                     collection=resolved_request.collection,
                     tenant_id=resolved_request.tenant_id,
                     filters=resolved_request.filters,
                 )
-                return await llm.generate(query=resolved_request, context=context)
+                return await resolved_llm.generate(query=resolved_request, context=context)
 
             endpoint.__name__ = handler.__name__
             endpoint.__doc__ = handler.__doc__
@@ -128,22 +129,20 @@ class FastRAG:
         self,
         path: str,
         *,
-        embedder: Embedder,
-        vector_store: VectorStore,
+        embedder: Embedder | str,
+        vector_store: VectorStore | str,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[IngestHandler], IngestHandler]:
-        self._validate_ingest_components(
-            embedder=embedder,
-            vector_store=vector_store,
-        )
+        resolved_embedder = self._resolve_embedder(embedder)
+        resolved_vector_store = self._resolve_vector_store(vector_store)
         route_tags: list[str | Enum] = list(tags) if tags is not None else ["ingest"]
 
         def decorator(handler: IngestHandler) -> IngestHandler:
             async def endpoint(request: IngestRequest) -> IngestResponse:
                 resolved_request = await self._resolve_ingest_request(handler(request))
-                embeddings = await embedder.embed(resolved_request.documents)
+                embeddings = await resolved_embedder.embed(resolved_request.documents)
                 metadata = self._expand_ingest_metadata(resolved_request)
-                await vector_store.upsert(
+                await resolved_vector_store.upsert(
                     documents=resolved_request.documents,
                     embeddings=embeddings,
                     collection=resolved_request.collection,
@@ -163,6 +162,15 @@ class FastRAG:
             return handler
 
         return decorator
+
+    def register_embedder(self, name: str, component: Embedder) -> None:
+        self.registry.register_embedder(name, component)
+
+    def register_vector_store(self, name: str, component: VectorStore) -> None:
+        self.registry.register_vector_store(name, component)
+
+    def register_llm(self, name: str, component: LLM) -> None:
+        self.registry.register_llm(name, component)
 
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])
@@ -209,25 +217,23 @@ class FastRAG:
 
         return metadata_items
 
-    def _validate_query_components(
-        self,
-        *,
-        embedder: Embedder,
-        vector_store: VectorStore,
-        llm: LLM,
-    ) -> None:
-        self._validate_component(embedder, Embedder, "embedder")
-        self._validate_component(vector_store, VectorStore, "vector_store")
-        self._validate_component(llm, LLM, "llm")
+    def _resolve_embedder(self, component: Embedder | str) -> Embedder:
+        if isinstance(component, str):
+            return self.registry.get_embedder(component)
+        self._validate_component(component, Embedder, "embedder")
+        return component
 
-    def _validate_ingest_components(
-        self,
-        *,
-        embedder: Embedder,
-        vector_store: VectorStore,
-    ) -> None:
-        self._validate_component(embedder, Embedder, "embedder")
-        self._validate_component(vector_store, VectorStore, "vector_store")
+    def _resolve_vector_store(self, component: VectorStore | str) -> VectorStore:
+        if isinstance(component, str):
+            return self.registry.get_vector_store(component)
+        self._validate_component(component, VectorStore, "vector_store")
+        return component
+
+    def _resolve_llm(self, component: LLM | str) -> LLM:
+        if isinstance(component, str):
+            return self.registry.get_llm(component)
+        self._validate_component(component, LLM, "llm")
+        return component
 
     def _validate_component(
         self,
