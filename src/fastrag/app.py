@@ -16,20 +16,22 @@ from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.registry import ComponentRegistry
+from fastrag.routing import (
+    IngestHandler,
+    QueryHandler,
+    build_ingest_decorator,
+    build_query_decorator,
+)
 from fastrag.schemas import (
     ErrorDetail,
     ErrorResponse,
     IngestRequest,
-    IngestResponse,
     QueryRequest,
-    RAGResponse,
 )
 from fastrag.services import PipelineService
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
-IngestHandler = Callable[[IngestRequest], IngestRequest | Awaitable[IngestRequest]]
-QueryHandler = Callable[[QueryRequest], QueryRequest | Awaitable[QueryRequest]]
 
 
 class FastRAG:
@@ -124,24 +126,16 @@ class FastRAG:
         resolved_embedder = self._resolve_embedder(embedder)
         resolved_vector_store = self._resolve_vector_store(vector_store)
         resolved_llm = self._resolve_llm(llm)
-        route_tags: list[str | Enum] = list(tags) if tags is not None else ["query"]
-
-        def decorator(handler: QueryHandler) -> QueryHandler:
-            async def endpoint(request: QueryRequest) -> RAGResponse:
-                resolved_request = await self._resolve_query_request(handler(request))
-                return await self.pipeline.run_query(
-                    request=resolved_request,
-                    embedder=resolved_embedder,
-                    vector_store=resolved_vector_store,
-                    llm=resolved_llm,
-                )
-
-            endpoint.__name__ = handler.__name__
-            endpoint.__doc__ = handler.__doc__
-            self.api.post(path, response_model=RAGResponse, tags=route_tags)(endpoint)
-            return handler
-
-        return decorator
+        return build_query_decorator(
+            api=self.api,
+            pipeline=self.pipeline,
+            path=path,
+            embedder=resolved_embedder,
+            vector_store=resolved_vector_store,
+            llm=resolved_llm,
+            resolve_request=self._resolve_query_request,
+            tags=tags,
+        )
 
     def ingest(
         self,
@@ -153,23 +147,15 @@ class FastRAG:
     ) -> Callable[[IngestHandler], IngestHandler]:
         resolved_embedder = self._resolve_embedder(embedder)
         resolved_vector_store = self._resolve_vector_store(vector_store)
-        route_tags: list[str | Enum] = list(tags) if tags is not None else ["ingest"]
-
-        def decorator(handler: IngestHandler) -> IngestHandler:
-            async def endpoint(request: IngestRequest) -> IngestResponse:
-                resolved_request = await self._resolve_ingest_request(handler(request))
-                return await self.pipeline.run_ingest(
-                    request=resolved_request,
-                    embedder=resolved_embedder,
-                    vector_store=resolved_vector_store,
-                )
-
-            endpoint.__name__ = handler.__name__
-            endpoint.__doc__ = handler.__doc__
-            self.api.post(path, response_model=IngestResponse, tags=route_tags)(endpoint)
-            return handler
-
-        return decorator
+        return build_ingest_decorator(
+            api=self.api,
+            pipeline=self.pipeline,
+            path=path,
+            embedder=resolved_embedder,
+            vector_store=resolved_vector_store,
+            resolve_request=self._resolve_ingest_request,
+            tags=tags,
+        )
 
     def register_embedder(self, name: str, component: Embedder) -> None:
         self.registry.register_embedder(name, component)
