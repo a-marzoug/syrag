@@ -10,6 +10,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import Receive, Scope, Send
 
+from fastrag.bootstrap import BootstrapService
 from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
@@ -49,6 +50,7 @@ class FastRAG:
         self.settings = settings
         self.defaults = settings.defaults.model_copy(deep=True)
         self.registry = ComponentRegistry()
+        self.bootstrap = BootstrapService(settings.bootstrap)
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
         self.api = FastAPI(
@@ -61,10 +63,12 @@ class FastRAG:
             middleware=middleware,
         )
         self.api.state.fastrag = self
+        self.api.state.bootstrap = self.bootstrap
         self.api.state.defaults = self.defaults
         self.api.state.observability = self.observability
         self.api.state.pipeline = self.pipeline
         self.api.state.registry = self.registry
+        self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
         self._register_exception_handlers()
         self._register_system_routes()
 

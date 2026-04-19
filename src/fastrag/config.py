@@ -10,6 +10,12 @@ class ComponentDefaults(BaseModel):
     llm: str | None = Field(default=None)
 
 
+class BootstrapSettings(BaseModel):
+    register_in_memory_defaults: bool = Field(default=False)
+    in_memory_embedder_dimensions: int = Field(default=16, gt=0)
+    in_memory_llm_max_context_documents: int = Field(default=3, gt=0)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -25,6 +31,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, ge=1, le=65535)
     reload: bool = Field(default=True)
     defaults: ComponentDefaults = Field(default_factory=ComponentDefaults)
+    bootstrap: BootstrapSettings = Field(default_factory=BootstrapSettings)
 
 
 @lru_cache

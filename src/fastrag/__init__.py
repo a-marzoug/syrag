@@ -1,5 +1,6 @@
 from fastrag.app import FastRAG, app, create_app
-from fastrag.config import ComponentDefaults, Settings, get_settings
+from fastrag.bootstrap import BootstrapService
+from fastrag.config import BootstrapSettings, ComponentDefaults, Settings, get_settings
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 from fastrag.registry import (
@@ -23,6 +24,8 @@ __all__ = [
     "ComponentNotFoundError",
     "ComponentRegistry",
     "ComponentValidationError",
+    "BootstrapService",
+    "BootstrapSettings",
     "ComponentDefaults",
     "Citation",
     "Embedder",
