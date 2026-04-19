@@ -12,6 +12,7 @@ from starlette.types import Receive, Scope, Send
 
 from fastrag.bootstrap import BootstrapService
 from fastrag.config import ComponentDefaults, Settings, get_settings
+from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import LLM, Embedder, VectorStore
@@ -52,6 +53,7 @@ class FastRAG:
         self.settings = settings
         self.defaults = settings.defaults.model_copy(deep=True)
         self.registry = ComponentRegistry()
+        self.resolver = ComponentResolver(registry=self.registry, defaults=self.defaults)
         self.bootstrap = BootstrapService(settings.bootstrap)
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
@@ -70,6 +72,7 @@ class FastRAG:
         self.api.state.observability = self.observability
         self.api.state.pipeline = self.pipeline
         self.api.state.registry = self.registry
+        self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
         self._register_exception_handlers()
         self._register_system_routes()
@@ -123,9 +126,9 @@ class FastRAG:
         llm: LLM | str | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[QueryHandler], QueryHandler]:
-        resolved_embedder = self._resolve_embedder(embedder)
-        resolved_vector_store = self._resolve_vector_store(vector_store)
-        resolved_llm = self._resolve_llm(llm)
+        resolved_embedder = self.resolver.resolve_embedder(embedder)
+        resolved_vector_store = self.resolver.resolve_vector_store(vector_store)
+        resolved_llm = self.resolver.resolve_llm(llm)
         return build_query_decorator(
             api=self.api,
             pipeline=self.pipeline,
@@ -145,8 +148,8 @@ class FastRAG:
         vector_store: VectorStore | str | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[IngestHandler], IngestHandler]:
-        resolved_embedder = self._resolve_embedder(embedder)
-        resolved_vector_store = self._resolve_vector_store(vector_store)
+        resolved_embedder = self.resolver.resolve_embedder(embedder)
+        resolved_vector_store = self.resolver.resolve_vector_store(vector_store)
         return build_ingest_decorator(
             api=self.api,
             pipeline=self.pipeline,
@@ -180,6 +183,7 @@ class FastRAG:
             ),
             llm=llm if llm is not None else self.defaults.llm,
         )
+        self.resolver.update_defaults(self.defaults)
         self.api.state.defaults = self.defaults
 
     def add_event_listener(self, listener: EventListener) -> None:
@@ -231,67 +235,6 @@ class FastRAG:
             resolved_result = result
 
         return resolved_result
-
-    def _resolve_embedder(self, component: Embedder | str | None) -> Embedder:
-        if component is None:
-            default_name = self._require_default_name(
-                component_name="embedder",
-                configured_name=self.defaults.embedder,
-            )
-            return self.registry.get_embedder(default_name)
-        if isinstance(component, str):
-            return self.registry.get_embedder(component)
-        self._validate_component(component, Embedder, "embedder")
-        return component
-
-    def _resolve_vector_store(self, component: VectorStore | str | None) -> VectorStore:
-        if component is None:
-            default_name = self._require_default_name(
-                component_name="vector_store",
-                configured_name=self.defaults.vector_store,
-            )
-            return self.registry.get_vector_store(default_name)
-        if isinstance(component, str):
-            return self.registry.get_vector_store(component)
-        self._validate_component(component, VectorStore, "vector_store")
-        return component
-
-    def _resolve_llm(self, component: LLM | str | None) -> LLM:
-        if component is None:
-            default_name = self._require_default_name(
-                component_name="llm",
-                configured_name=self.defaults.llm,
-            )
-            return self.registry.get_llm(default_name)
-        if isinstance(component, str):
-            return self.registry.get_llm(component)
-        self._validate_component(component, LLM, "llm")
-        return component
-
-    def _require_default_name(
-        self,
-        *,
-        component_name: str,
-        configured_name: str | None,
-    ) -> str:
-        if configured_name is not None:
-            return configured_name
-
-        msg = f"No default {component_name} configured for this app"
-        raise ValueError(msg)
-
-    def _validate_component(
-        self,
-        component: object,
-        protocol: type[object],
-        component_name: str,
-    ) -> None:
-        if isinstance(component, protocol):
-            return
-
-        msg = f"{component_name} must implement the {protocol.__name__} protocol"
-        raise TypeError(msg)
-
 
 def create_app(settings: Settings | None = None) -> FastRAG:
     resolved_settings = settings or get_settings()
