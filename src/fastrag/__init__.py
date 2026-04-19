@@ -3,7 +3,13 @@ from fastrag.bootstrap import BootstrapService
 from fastrag.config import BootstrapSettings, ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from fastrag.providers import (
+    InMemoryEmbedder,
+    InMemoryLLM,
+    InMemoryProviderFactory,
+    InMemoryVectorStore,
+    ProviderFactory,
+)
 from fastrag.registry import (
     ComponentAlreadyRegisteredError,
     ComponentNotFoundError,
@@ -36,8 +42,10 @@ __all__ = [
     "IngestResponse",
     "InMemoryEmbedder",
     "InMemoryLLM",
+    "InMemoryProviderFactory",
     "InMemoryVectorStore",
     "LLM",
+    "ProviderFactory",
     "QueryRequest",
     "RAGResponse",
     "RegistryError",

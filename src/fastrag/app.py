@@ -16,6 +16,7 @@ from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.providers import ProviderFactory
 from fastrag.registry import ComponentRegistry
 from fastrag.routing import (
     IngestHandler,
@@ -45,6 +46,7 @@ class FastRAG:
         version: str,
         description: str,
         settings: Settings,
+        provider_factory: ProviderFactory | None = None,
         docs_url: str = "/docs",
         redoc_url: str = "/redoc",
         openapi_url: str = "/openapi.json",
@@ -54,7 +56,10 @@ class FastRAG:
         self.defaults = settings.defaults.model_copy(deep=True)
         self.registry = ComponentRegistry()
         self.resolver = ComponentResolver(registry=self.registry, defaults=self.defaults)
-        self.bootstrap = BootstrapService(settings.bootstrap)
+        self.bootstrap = BootstrapService(
+            settings.bootstrap,
+            factory=provider_factory,
+        )
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
         self.api = FastAPI(
@@ -71,6 +76,7 @@ class FastRAG:
         self.api.state.defaults = self.defaults
         self.api.state.observability = self.observability
         self.api.state.pipeline = self.pipeline
+        self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
@@ -236,7 +242,11 @@ class FastRAG:
 
         return resolved_result
 
-def create_app(settings: Settings | None = None) -> FastRAG:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    provider_factory: ProviderFactory | None = None,
+) -> FastRAG:
     resolved_settings = settings or get_settings()
 
     return FastRAG(
@@ -244,6 +254,7 @@ def create_app(settings: Settings | None = None) -> FastRAG:
         version=resolved_settings.app_version,
         description="Production-first FastRAG application bootstrap.",
         settings=resolved_settings,
+        provider_factory=provider_factory,
     )
 
 
