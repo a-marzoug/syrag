@@ -58,6 +58,7 @@ class FastRAG:
         self.resolver = ComponentResolver(registry=self.registry, defaults=self.defaults)
         self.bootstrap = BootstrapService(
             settings.bootstrap,
+            provider_settings=settings.providers,
             factory=provider_factory,
         )
         self.observability = ObservabilityHub()
@@ -77,6 +78,7 @@ class FastRAG:
         self.api.state.observability = self.observability
         self.api.state.pipeline = self.pipeline
         self.api.state.provider_factory = self.bootstrap.factory
+        self.api.state.provider_settings = self.bootstrap.provider_settings
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)

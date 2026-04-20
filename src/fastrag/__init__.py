@@ -1,6 +1,13 @@
 from fastrag.app import FastRAG, app, create_app
 from fastrag.bootstrap import BootstrapService
-from fastrag.config import BootstrapSettings, ComponentDefaults, Settings, get_settings
+from fastrag.config import (
+    BootstrapSettings,
+    ComponentDefaults,
+    InMemoryProviderSettings,
+    ProviderSettings,
+    Settings,
+    get_settings,
+)
 from fastrag.dependencies import ComponentResolver
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import (
@@ -38,6 +45,7 @@ __all__ = [
     "Citation",
     "Embedder",
     "FastRAG",
+    "InMemoryProviderSettings",
     "IngestRequest",
     "IngestResponse",
     "InMemoryEmbedder",
@@ -45,6 +53,7 @@ __all__ = [
     "InMemoryProviderFactory",
     "InMemoryVectorStore",
     "LLM",
+    "ProviderSettings",
     "ProviderFactory",
     "QueryRequest",
     "RAGResponse",

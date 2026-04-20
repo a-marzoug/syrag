@@ -2,7 +2,13 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.config import BootstrapSettings, ComponentDefaults, Settings
+from fastrag.config import (
+    BootstrapSettings,
+    ComponentDefaults,
+    InMemoryProviderSettings,
+    ProviderSettings,
+    Settings,
+)
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 from fastrag.registry import ComponentNotFoundError
@@ -16,16 +22,16 @@ class StubProviderFactory:
         self.llm = InMemoryLLM(max_context_documents=2)
         self.calls: list[str] = []
 
-    def create_embedder(self, *, settings: BootstrapSettings) -> Embedder:
-        self.calls.append(f"embedder:{settings.in_memory_embedder_dimensions}")
+    def create_embedder(self, *, settings: ProviderSettings) -> Embedder:
+        self.calls.append(f"embedder:{settings.in_memory.embedder_dimensions}")
         return self.embedder
 
-    def create_vector_store(self, *, settings: BootstrapSettings) -> VectorStore:
+    def create_vector_store(self, *, settings: ProviderSettings) -> VectorStore:
         self.calls.append("vector_store")
         return self.vector_store
 
-    def create_llm(self, *, settings: BootstrapSettings) -> LLM:
-        self.calls.append(f"llm:{settings.in_memory_llm_max_context_documents}")
+    def create_llm(self, *, settings: ProviderSettings) -> LLM:
+        self.calls.append(f"llm:{settings.in_memory.llm_max_context_documents}")
         return self.llm
 
 
@@ -97,10 +103,12 @@ def test_bootstrap_can_use_a_custom_provider_factory() -> None:
                 vector_store="memory",
                 llm="grounded",
             ),
-            bootstrap=BootstrapSettings(
-                register_in_memory_defaults=True,
-                in_memory_embedder_dimensions=99,
-                in_memory_llm_max_context_documents=5,
+            bootstrap=BootstrapSettings(register_in_memory_defaults=True),
+            providers=ProviderSettings(
+                in_memory=InMemoryProviderSettings(
+                    embedder_dimensions=99,
+                    llm_max_context_documents=5,
+                )
             ),
         ),
         provider_factory=factory,
@@ -110,4 +118,37 @@ def test_bootstrap_can_use_a_custom_provider_factory() -> None:
     assert app.registry.get_vector_store("memory") is factory.vector_store
     assert app.registry.get_llm("grounded") is factory.llm
     assert app.api.state.provider_factory is factory
+    assert app.api.state.provider_settings == ProviderSettings(
+        in_memory=InMemoryProviderSettings(
+            embedder_dimensions=99,
+            llm_max_context_documents=5,
+        )
+    )
     assert factory.calls == ["embedder:99", "vector_store", "llm:5"]
+
+
+def test_bootstrap_uses_typed_in_memory_provider_settings() -> None:
+    app = create_app(
+        Settings(
+            defaults=ComponentDefaults(
+                embedder="default",
+                vector_store="memory",
+                llm="grounded",
+            ),
+            bootstrap=BootstrapSettings(register_in_memory_defaults=True),
+            providers=ProviderSettings(
+                in_memory=InMemoryProviderSettings(
+                    embedder_dimensions=24,
+                    llm_max_context_documents=6,
+                )
+            ),
+        )
+    )
+
+    embedder = app.registry.get_embedder("default")
+    llm = app.registry.get_llm("grounded")
+
+    assert isinstance(embedder, InMemoryEmbedder)
+    assert isinstance(llm, InMemoryLLM)
+    assert embedder.dimensions == 24
+    assert llm.max_context_documents == 6
