@@ -4,9 +4,31 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import Embedder
+from fastrag.protocols import Embedder, EmbeddingVector, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, QueryRequest
+from fastrag.schemas import DocumentChunk, QueryRequest, RetrievedChunk
+from fastrag.services import RetrievalStrategy
+
+
+class StubRetrievalStrategy(RetrievalStrategy):
+    async def retrieve(
+        self,
+        *,
+        request: QueryRequest,
+        query_embedding: EmbeddingVector,
+        vector_store: VectorStore,
+    ) -> list[RetrievedChunk]:
+        return [
+            RetrievedChunk(
+                chunk_id="custom-chunk-0",
+                source_id="custom-doc",
+                content=f"Custom retrieval for: {request.query}",
+                score=0.87,
+                metadata={},
+                page_number=1,
+                chunk_index=0,
+            )
+        ]
 
 
 @pytest.mark.asyncio
@@ -81,3 +103,28 @@ def test_query_decorator_rejects_invalid_components() -> None:
             vector_store=InMemoryVectorStore(),
             llm=InMemoryLLM(),
         )
+
+
+@pytest.mark.asyncio
+async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
+    app = create_app()
+
+    @app.query(
+        "/query",
+        embedder=InMemoryEmbedder(),
+        vector_store=InMemoryVectorStore(),
+        llm=InMemoryLLM(),
+        retrieval_strategy=StubRetrievalStrategy(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/query", json={"query": "What is FastRAG?"})
+
+    assert response.status_code == 200
+    assert response.json()["citations"][0]["source_id"] == "custom-doc"
+    assert "Custom retrieval" in response.json()["answer"]

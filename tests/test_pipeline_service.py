@@ -1,9 +1,14 @@
 import pytest
 
-from fastrag.protocols import Chunker, Embedder, VectorStore
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
-from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest
-from fastrag.services import PipelineService
+from fastrag.protocols import Chunker, Embedder, EmbeddingVector, VectorStore
+from fastrag.providers import (
+    InMemoryEmbedder,
+    InMemoryLLM,
+    InMemoryVectorStore,
+    PassThroughChunker,
+)
+from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RetrievedChunk
+from fastrag.services import PipelineService, RetrievalStrategy
 
 
 class StubIngestionPipeline:
@@ -32,6 +37,37 @@ class StubIngestionPipeline:
             collection=request.collection,
             tenant_id=request.tenant_id,
         )
+
+
+class StubRetrievalStrategy(RetrievalStrategy):
+    def __init__(self) -> None:
+        self.calls: list[tuple[QueryRequest, list[float], str]] = []
+
+    async def retrieve(
+        self,
+        *,
+        request: QueryRequest,
+        query_embedding: EmbeddingVector,
+        vector_store: VectorStore,
+    ) -> list[RetrievedChunk]:
+        self.calls.append(
+            (
+                request,
+                [float(value) for value in query_embedding],
+                type(vector_store).__name__,
+            )
+        )
+        return [
+            RetrievedChunk(
+                chunk_id="overview-0-chunk-0",
+                source_id="overview-0",
+                content="FastRAG emphasizes observability and type safety.",
+                score=0.99,
+                metadata={},
+                page_number=1,
+                chunk_index=0,
+            )
+        ]
 
 
 @pytest.mark.asyncio
@@ -69,6 +105,7 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     assert query_response.citations[0].source_id == "overview-0"
     assert "FastRAG" in query_response.answer
 
+
 @pytest.mark.asyncio
 async def test_pipeline_service_delegates_ingest_to_ingestion_pipeline() -> None:
     ingestion_pipeline = StubIngestionPipeline()
@@ -91,4 +128,27 @@ async def test_pipeline_service_delegates_ingest_to_ingestion_pipeline() -> None
     assert response.ingested_documents == 1
     assert ingestion_pipeline.calls == [
         (request, "PassThroughChunker", "InMemoryEmbedder", "InMemoryVectorStore")
+    ]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_service_delegates_query_retrieval_to_retrieval_strategy() -> None:
+    retrieval_strategy = StubRetrievalStrategy()
+    service = PipelineService(retrieval_strategy=retrieval_strategy)
+    embedder = InMemoryEmbedder()
+    vector_store = InMemoryVectorStore()
+    llm = InMemoryLLM()
+    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+
+    response = await service.run_query(
+        request=request,
+        embedder=embedder,
+        vector_store=vector_store,
+        llm=llm,
+    )
+    expected_embedding = await embedder.embed([request.query])
+
+    assert response.citations[0].source_id == "overview-0"
+    assert retrieval_strategy.calls == [
+        (request, expected_embedding[0], "InMemoryVectorStore")
     ]

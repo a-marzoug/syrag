@@ -5,6 +5,7 @@ from fastrag.observability import ObservabilityHub, PipelineEvent
 from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 from fastrag.services.ingest import DefaultIngestionPipeline, IngestionPipeline
+from fastrag.services.retrieval import DefaultRetrievalStrategy, RetrievalStrategy
 
 
 class PipelineService:
@@ -14,9 +15,13 @@ class PipelineService:
         self,
         observability: ObservabilityHub | None = None,
         ingestion_pipeline: IngestionPipeline | None = None,
+        retrieval_strategy: RetrievalStrategy | None = None,
     ) -> None:
         self.observability = observability or ObservabilityHub()
         self.ingestion_pipeline = ingestion_pipeline or DefaultIngestionPipeline(
+            observability=self.observability
+        )
+        self.retrieval_strategy = retrieval_strategy or DefaultRetrievalStrategy(
             observability=self.observability
         )
 
@@ -27,6 +32,7 @@ class PipelineService:
         embedder: Embedder,
         vector_store: VectorStore,
         llm: LLM,
+        retrieval_strategy: RetrievalStrategy | None = None,
     ) -> RAGResponse:
         self._emit(
             operation="query",
@@ -56,40 +62,11 @@ class PipelineService:
                 details={"component": type(embedder).__name__},
             ) from exc
 
-        self._emit(
-            operation="query",
-            stage="retrieve",
-            status="started",
-            component=type(vector_store).__name__,
+        context = await (retrieval_strategy or self.retrieval_strategy).retrieve(
+            request=request,
+            query_embedding=query_embedding,
+            vector_store=vector_store,
         )
-        try:
-            context = await vector_store.query(
-                query_embedding=query_embedding,
-                top_k=request.top_k,
-                collection=request.collection,
-                tenant_id=request.tenant_id,
-                filters=request.filters,
-            )
-            self._emit(
-                operation="query",
-                stage="retrieve",
-                status="succeeded",
-                component=type(vector_store).__name__,
-                details={"results": len(context)},
-            )
-        except Exception as exc:
-            self._emit_failure(
-                operation="query",
-                stage="retrieve",
-                component=type(vector_store).__name__,
-                error=exc,
-            )
-            raise PipelineStageError(
-                code="retrieval_failed",
-                message="Failed to retrieve supporting documents.",
-                stage="retrieve",
-                details={"component": type(vector_store).__name__},
-            ) from exc
 
         self._emit(
             operation="query",

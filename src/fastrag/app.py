@@ -30,7 +30,7 @@ from fastrag.schemas import (
     IngestRequest,
     QueryRequest,
 )
-from fastrag.services import PipelineService
+from fastrag.services import DefaultRetrievalStrategy, PipelineService, RetrievalStrategy
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
@@ -64,6 +64,8 @@ class FastRAG:
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
         self.chunker = PassThroughChunker()
+        self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.pipeline.retrieval_strategy = self.retrieval_strategy
         self.api = FastAPI(
             title=title,
             version=version,
@@ -81,6 +83,7 @@ class FastRAG:
         self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.provider_settings = self.bootstrap.provider_settings
         self.api.state.chunker = self.chunker
+        self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
@@ -134,11 +137,13 @@ class FastRAG:
         embedder: Embedder | str | None = None,
         vector_store: VectorStore | str | None = None,
         llm: LLM | str | None = None,
+        retrieval_strategy: RetrievalStrategy | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[QueryHandler], QueryHandler]:
         resolved_embedder = self.resolver.resolve_embedder(embedder)
         resolved_vector_store = self.resolver.resolve_vector_store(vector_store)
         resolved_llm = self.resolver.resolve_llm(llm)
+        resolved_retrieval_strategy = self._resolve_retrieval_strategy(retrieval_strategy)
         return build_query_decorator(
             api=self.api,
             pipeline=self.pipeline,
@@ -146,6 +151,7 @@ class FastRAG:
             embedder=resolved_embedder,
             vector_store=resolved_vector_store,
             llm=resolved_llm,
+            retrieval_strategy=resolved_retrieval_strategy,
             resolve_request=self._resolve_query_request,
             tags=tags,
         )
@@ -256,6 +262,18 @@ class FastRAG:
             return chunker
 
         msg = "chunker must implement the Chunker protocol"
+        raise TypeError(msg)
+
+    def _resolve_retrieval_strategy(
+        self,
+        retrieval_strategy: RetrievalStrategy | None,
+    ) -> RetrievalStrategy:
+        if retrieval_strategy is None:
+            return self.retrieval_strategy
+        if isinstance(retrieval_strategy, RetrievalStrategy):
+            return retrieval_strategy
+
+        msg = "retrieval_strategy must implement the RetrievalStrategy protocol"
         raise TypeError(msg)
 
 def create_app(

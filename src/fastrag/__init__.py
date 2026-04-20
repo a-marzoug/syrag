@@ -36,6 +36,7 @@ from fastrag.schemas import (
     RetrievedDocument,
     SourceDocument,
 )
+from fastrag.services import DefaultRetrievalStrategy, RetrievalStrategy
 
 __all__ = [
     "ComponentAlreadyRegisteredError",
@@ -49,6 +50,7 @@ __all__ = [
     "Citation",
     "Chunker",
     "DocumentChunk",
+    "DefaultRetrievalStrategy",
     "Embedder",
     "FastRAG",
     "InMemoryProviderSettings",
@@ -65,6 +67,7 @@ __all__ = [
     "QueryRequest",
     "RAGResponse",
     "RegistryError",
+    "RetrievalStrategy",
     "RetrievedChunk",
     "RetrievedDocument",
     "SourceDocument",

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
-from fastrag.services import PipelineService
+from fastrag.services import PipelineService, RetrievalStrategy
 
 type IngestHandler = Callable[[IngestRequest], IngestRequest | Awaitable[IngestRequest]]
 type QueryHandler = Callable[[QueryRequest], QueryRequest | Awaitable[QueryRequest]]
@@ -19,6 +19,7 @@ def build_query_decorator(
     embedder: Embedder,
     vector_store: VectorStore,
     llm: LLM,
+    retrieval_strategy: RetrievalStrategy,
     resolve_request: Callable[[QueryRequest | Awaitable[QueryRequest]], Awaitable[QueryRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[QueryHandler], QueryHandler]:
@@ -32,6 +33,7 @@ def build_query_decorator(
                 embedder=embedder,
                 vector_store=vector_store,
                 llm=llm,
+                retrieval_strategy=retrieval_strategy,
             )
 
         endpoint.__name__ = handler.__name__
