@@ -1,13 +1,21 @@
+from collections.abc import Sequence
+
 import pytest
 
-from fastrag.protocols import Chunker, Embedder, EmbeddingVector, VectorStore
+from fastrag.protocols import Chunker, Embedder, EmbeddingVector, PromptAssembler, VectorStore
 from fastrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
     PassThroughChunker,
 )
-from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RetrievedChunk
+from fastrag.schemas import (
+    AssembledPrompt,
+    IngestRequest,
+    IngestResponse,
+    QueryRequest,
+    RetrievedChunk,
+)
 from fastrag.services import PipelineService, RetrievalStrategy
 
 
@@ -70,6 +78,34 @@ class StubRetrievalStrategy(RetrievalStrategy):
         ]
 
 
+class StubPromptAssembler(PromptAssembler):
+    def __init__(self) -> None:
+        self.calls: list[tuple[QueryRequest, list[str]]] = []
+
+    async def assemble(
+        self,
+        *,
+        query: QueryRequest,
+        context: Sequence[RetrievedChunk],
+    ) -> AssembledPrompt:
+        self.calls.append((query, [chunk.source_id for chunk in context]))
+        return AssembledPrompt(
+            query=query,
+            context=[
+                RetrievedChunk(
+                    chunk_id="assembled-chunk-0",
+                    source_id="assembled-doc",
+                    content="Prompt assembly can reshape the grounded context.",
+                    score=0.88,
+                    metadata={},
+                    page_number=1,
+                    chunk_index=0,
+                )
+            ],
+            prompt=f"Custom assembled prompt for: {query.query}",
+        )
+
+
 @pytest.mark.asyncio
 async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     service = PipelineService()
@@ -104,6 +140,9 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     assert ingest_response.ingested_documents == 2
     assert query_response.citations[0].source_id == "overview-0"
     assert "FastRAG" in query_response.answer
+    assert query_response.usage["prompt_tokens"] > len(
+        "What does FastRAG emphasize?".split()
+    )
 
 
 @pytest.mark.asyncio
@@ -152,3 +191,27 @@ async def test_pipeline_service_delegates_query_retrieval_to_retrieval_strategy(
     assert retrieval_strategy.calls == [
         (request, expected_embedding[0], "InMemoryVectorStore")
     ]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_service_delegates_prompt_assembly_to_prompt_assembler() -> None:
+    retrieval_strategy = StubRetrievalStrategy()
+    prompt_assembler = StubPromptAssembler()
+    service = PipelineService(
+        retrieval_strategy=retrieval_strategy,
+        prompt_assembler=prompt_assembler,
+    )
+    embedder = InMemoryEmbedder()
+    vector_store = InMemoryVectorStore()
+    llm = InMemoryLLM()
+    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+
+    response = await service.run_query(
+        request=request,
+        embedder=embedder,
+        vector_store=vector_store,
+        llm=llm,
+    )
+
+    assert response.citations[0].source_id == "assembled-doc"
+    assert prompt_assembler.calls == [(request, ["overview-0"])]

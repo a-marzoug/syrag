@@ -64,6 +64,12 @@ class RetrievedDocument(RetrievedChunk):
     """Backward-compatible alias for retrieved chunk results."""
 
 
+class AssembledPrompt(FastRAGSchema):
+    query: QueryRequest
+    context: list[RetrievedChunk] = Field(default_factory=list)
+    prompt: str = Field(min_length=1)
+
+
 class RAGResponse(FastRAGSchema):
     answer: str = Field(min_length=1)
     citations: list[Citation] = Field(default_factory=list)

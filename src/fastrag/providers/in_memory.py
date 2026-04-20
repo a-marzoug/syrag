@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
-from fastrag.schemas import Citation, DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
+from fastrag.schemas import AssembledPrompt, Citation, DocumentChunk, RAGResponse, RetrievedChunk
 
 TOKEN_PATTERN = re.compile(r"\b\w+\b")
 
@@ -161,19 +161,18 @@ class InMemoryLLM(LLM):
     async def generate(
         self,
         *,
-        query: QueryRequest,
-        context: Sequence[RetrievedChunk],
+        prompt: AssembledPrompt,
     ) -> RAGResponse:
-        limited_context = list(context[: self.max_context_documents])
+        limited_context = list(prompt.context[: self.max_context_documents])
         if not limited_context:
             return RAGResponse(
-                answer=f"No grounded context was available for query: {query.query}",
+                answer=f"No grounded context was available for query: {prompt.query.query}",
                 citations=[],
-                usage=self._usage_for(query.query, ""),
+                usage=self._usage_for(prompt.prompt, ""),
             )
 
         supporting_passages = " ".join(document.content for document in limited_context)
-        answer = f"Grounded answer for '{query.query}': {supporting_passages}"
+        answer = f"Grounded answer for '{prompt.query.query}': {supporting_passages}"
 
         return RAGResponse(
             answer=answer,
@@ -186,7 +185,7 @@ class InMemoryLLM(LLM):
                 )
                 for document in limited_context
             ],
-            usage=self._usage_for(query.query, answer),
+            usage=self._usage_for(prompt.prompt, answer),
         )
 
     def _usage_for(self, prompt: str, answer: str) -> dict[str, int]:

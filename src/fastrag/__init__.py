@@ -9,7 +9,7 @@ from fastrag.config import (
     get_settings,
 )
 from fastrag.dependencies import ComponentResolver
-from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
 from fastrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
@@ -26,6 +26,7 @@ from fastrag.registry import (
     RegistryError,
 )
 from fastrag.schemas import (
+    AssembledPrompt,
     Citation,
     DocumentChunk,
     IngestRequest,
@@ -36,7 +37,11 @@ from fastrag.schemas import (
     RetrievedDocument,
     SourceDocument,
 )
-from fastrag.services import DefaultRetrievalStrategy, RetrievalStrategy
+from fastrag.services import (
+    DefaultPromptAssembler,
+    DefaultRetrievalStrategy,
+    RetrievalStrategy,
+)
 
 __all__ = [
     "ComponentAlreadyRegisteredError",
@@ -47,8 +52,10 @@ __all__ = [
     "BootstrapSettings",
     "ComponentDefaults",
     "ComponentResolver",
+    "AssembledPrompt",
     "Citation",
     "Chunker",
+    "DefaultPromptAssembler",
     "DocumentChunk",
     "DefaultRetrievalStrategy",
     "Embedder",
@@ -62,6 +69,7 @@ __all__ = [
     "InMemoryVectorStore",
     "LLM",
     "PassThroughChunker",
+    "PromptAssembler",
     "ProviderSettings",
     "ProviderFactory",
     "QueryRequest",

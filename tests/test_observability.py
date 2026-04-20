@@ -74,6 +74,8 @@ async def test_query_route_emits_stage_events() -> None:
         ("embed", "succeeded"),
         ("retrieve", "started"),
         ("retrieve", "succeeded"),
+        ("assemble", "started"),
+        ("assemble", "succeeded"),
         ("generate", "started"),
         ("generate", "succeeded"),
     ]

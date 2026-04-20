@@ -2,7 +2,7 @@ import pytest
 
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, QueryRequest
+from fastrag.schemas import AssembledPrompt, DocumentChunk, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -107,7 +107,13 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
         top_k=2,
         collection=query.collection,
     )
-    response = await llm.generate(query=query, context=context)
+    response = await llm.generate(
+        prompt=AssembledPrompt(
+            query=query,
+            context=context,
+            prompt=f"Question: {query.query}",
+        )
+    )
 
     assert isinstance(llm, LLM)
     assert "FastRAG" in response.answer

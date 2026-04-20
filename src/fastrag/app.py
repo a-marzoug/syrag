@@ -15,7 +15,7 @@ from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
-from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
 from fastrag.providers import PassThroughChunker, ProviderFactory
 from fastrag.registry import ComponentRegistry
 from fastrag.routing import (
@@ -30,7 +30,12 @@ from fastrag.schemas import (
     IngestRequest,
     QueryRequest,
 )
-from fastrag.services import DefaultRetrievalStrategy, PipelineService, RetrievalStrategy
+from fastrag.services import (
+    DefaultPromptAssembler,
+    DefaultRetrievalStrategy,
+    PipelineService,
+    RetrievalStrategy,
+)
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
@@ -64,7 +69,9 @@ class FastRAG:
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
         self.chunker = PassThroughChunker()
+        self.prompt_assembler = DefaultPromptAssembler()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.pipeline.prompt_assembler = self.prompt_assembler
         self.pipeline.retrieval_strategy = self.retrieval_strategy
         self.api = FastAPI(
             title=title,
@@ -83,6 +90,7 @@ class FastRAG:
         self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.provider_settings = self.bootstrap.provider_settings
         self.api.state.chunker = self.chunker
+        self.api.state.prompt_assembler = self.prompt_assembler
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
@@ -138,12 +146,14 @@ class FastRAG:
         vector_store: VectorStore | str | None = None,
         llm: LLM | str | None = None,
         retrieval_strategy: RetrievalStrategy | None = None,
+        prompt_assembler: PromptAssembler | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[QueryHandler], QueryHandler]:
         resolved_embedder = self.resolver.resolve_embedder(embedder)
         resolved_vector_store = self.resolver.resolve_vector_store(vector_store)
         resolved_llm = self.resolver.resolve_llm(llm)
         resolved_retrieval_strategy = self._resolve_retrieval_strategy(retrieval_strategy)
+        resolved_prompt_assembler = self._resolve_prompt_assembler(prompt_assembler)
         return build_query_decorator(
             api=self.api,
             pipeline=self.pipeline,
@@ -152,6 +162,7 @@ class FastRAG:
             vector_store=resolved_vector_store,
             llm=resolved_llm,
             retrieval_strategy=resolved_retrieval_strategy,
+            prompt_assembler=resolved_prompt_assembler,
             resolve_request=self._resolve_query_request,
             tags=tags,
         )
@@ -274,6 +285,18 @@ class FastRAG:
             return retrieval_strategy
 
         msg = "retrieval_strategy must implement the RetrievalStrategy protocol"
+        raise TypeError(msg)
+
+    def _resolve_prompt_assembler(
+        self,
+        prompt_assembler: PromptAssembler | None,
+    ) -> PromptAssembler:
+        if prompt_assembler is None:
+            return self.prompt_assembler
+        if isinstance(prompt_assembler, PromptAssembler):
+            return prompt_assembler
+
+        msg = "prompt_assembler must implement the PromptAssembler protocol"
         raise TypeError(msg)
 
 def create_app(

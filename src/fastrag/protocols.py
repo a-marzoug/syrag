@@ -1,7 +1,14 @@
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
-from fastrag.schemas import DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk, SourceDocument
+from fastrag.schemas import (
+    AssembledPrompt,
+    DocumentChunk,
+    QueryRequest,
+    RAGResponse,
+    RetrievedChunk,
+    SourceDocument,
+)
 
 type EmbeddingVector = Sequence[float]
 type Filters = Mapping[str, Any]
@@ -53,13 +60,25 @@ class Chunker(Protocol):
 
 
 @runtime_checkable
+class PromptAssembler(Protocol):
+    """Builds a grounded prompt package from query inputs and retrieved chunks."""
+
+    async def assemble(
+        self,
+        *,
+        query: QueryRequest,
+        context: Sequence[RetrievedChunk],
+    ) -> AssembledPrompt:
+        """Return the assembled prompt payload passed into generation."""
+
+
+@runtime_checkable
 class LLM(Protocol):
     """Generates the final grounded response from retrieved context."""
 
     async def generate(
         self,
         *,
-        query: QueryRequest,
-        context: Sequence[RetrievedChunk],
+        prompt: AssembledPrompt,
     ) -> RAGResponse:
         """Return a typed response with answer text, citations, and usage."""

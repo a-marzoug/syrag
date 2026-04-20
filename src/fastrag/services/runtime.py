@@ -2,8 +2,9 @@ from typing import Any
 
 from fastrag.errors import PipelineStageError
 from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from fastrag.services.assembly import DefaultPromptAssembler
 from fastrag.services.ingest import DefaultIngestionPipeline, IngestionPipeline
 from fastrag.services.retrieval import DefaultRetrievalStrategy, RetrievalStrategy
 
@@ -16,6 +17,7 @@ class PipelineService:
         observability: ObservabilityHub | None = None,
         ingestion_pipeline: IngestionPipeline | None = None,
         retrieval_strategy: RetrievalStrategy | None = None,
+        prompt_assembler: PromptAssembler | None = None,
     ) -> None:
         self.observability = observability or ObservabilityHub()
         self.ingestion_pipeline = ingestion_pipeline or DefaultIngestionPipeline(
@@ -24,6 +26,7 @@ class PipelineService:
         self.retrieval_strategy = retrieval_strategy or DefaultRetrievalStrategy(
             observability=self.observability
         )
+        self.prompt_assembler = prompt_assembler or DefaultPromptAssembler()
 
     async def run_query(
         self,
@@ -33,6 +36,7 @@ class PipelineService:
         vector_store: VectorStore,
         llm: LLM,
         retrieval_strategy: RetrievalStrategy | None = None,
+        prompt_assembler: PromptAssembler | None = None,
     ) -> RAGResponse:
         self._emit(
             operation="query",
@@ -68,6 +72,36 @@ class PipelineService:
             vector_store=vector_store,
         )
 
+        assembler = prompt_assembler or self.prompt_assembler
+        self._emit(
+            operation="query",
+            stage="assemble",
+            status="started",
+            component=type(assembler).__name__,
+        )
+        try:
+            assembled_prompt = await assembler.assemble(query=request, context=context)
+            self._emit(
+                operation="query",
+                stage="assemble",
+                status="succeeded",
+                component=type(assembler).__name__,
+                details={"context_chunks": len(assembled_prompt.context)},
+            )
+        except Exception as exc:
+            self._emit_failure(
+                operation="query",
+                stage="assemble",
+                component=type(assembler).__name__,
+                error=exc,
+            )
+            raise PipelineStageError(
+                code="assembly_failed",
+                message="Failed to assemble the grounded prompt.",
+                stage="assemble",
+                details={"component": type(assembler).__name__},
+            ) from exc
+
         self._emit(
             operation="query",
             stage="generate",
@@ -75,7 +109,7 @@ class PipelineService:
             component=type(llm).__name__,
         )
         try:
-            response = await llm.generate(query=request, context=context)
+            response = await llm.generate(prompt=assembled_prompt)
             self._emit(
                 operation="query",
                 stage="generate",

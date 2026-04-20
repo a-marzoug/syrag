@@ -5,7 +5,14 @@ from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
 from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
-from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest, RAGResponse, RetrievedChunk
+from fastrag.schemas import (
+    AssembledPrompt,
+    DocumentChunk,
+    IngestRequest,
+    QueryRequest,
+    RAGResponse,
+    RetrievedChunk,
+)
 
 
 class FailingEmbedder(Embedder):
@@ -40,10 +47,9 @@ class PassthroughLLM(LLM):
     async def generate(
         self,
         *,
-        query: QueryRequest,
-        context: Sequence[RetrievedChunk],
+        prompt: AssembledPrompt,
     ) -> RAGResponse:
-        return RAGResponse(answer=query.query)
+        return RAGResponse(answer=prompt.query.query)
 
 
 @pytest.mark.asyncio

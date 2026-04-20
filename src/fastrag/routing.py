@@ -3,7 +3,7 @@ from enum import Enum
 
 from fastapi import FastAPI
 
-from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 from fastrag.services import PipelineService, RetrievalStrategy
 
@@ -20,6 +20,7 @@ def build_query_decorator(
     vector_store: VectorStore,
     llm: LLM,
     retrieval_strategy: RetrievalStrategy,
+    prompt_assembler: PromptAssembler,
     resolve_request: Callable[[QueryRequest | Awaitable[QueryRequest]], Awaitable[QueryRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[QueryHandler], QueryHandler]:
@@ -34,6 +35,7 @@ def build_query_decorator(
                 vector_store=vector_store,
                 llm=llm,
                 retrieval_strategy=retrieval_strategy,
+                prompt_assembler=prompt_assembler,
             )
 
         endpoint.__name__ = handler.__name__

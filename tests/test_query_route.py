@@ -1,12 +1,13 @@
+from collections.abc import Sequence
 from typing import cast
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import Embedder, EmbeddingVector, VectorStore
+from fastrag.protocols import Embedder, EmbeddingVector, PromptAssembler, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, QueryRequest, RetrievedChunk
+from fastrag.schemas import AssembledPrompt, DocumentChunk, QueryRequest, RetrievedChunk
 from fastrag.services import RetrievalStrategy
 
 
@@ -29,6 +30,30 @@ class StubRetrievalStrategy(RetrievalStrategy):
                 chunk_index=0,
             )
         ]
+
+
+class StubPromptAssembler(PromptAssembler):
+    async def assemble(
+        self,
+        *,
+        query: QueryRequest,
+        context: Sequence[RetrievedChunk],
+    ) -> AssembledPrompt:
+        return AssembledPrompt(
+            query=query,
+            context=[
+                RetrievedChunk(
+                    chunk_id="assembled-chunk-0",
+                    source_id="assembled-doc",
+                    content=f"Custom assembly for: {query.query}",
+                    score=0.91,
+                    metadata={},
+                    page_number=1,
+                    chunk_index=0,
+                )
+            ],
+            prompt=f"Custom assembled prompt for: {query.query}",
+        )
 
 
 @pytest.mark.asyncio
@@ -121,6 +146,22 @@ def test_query_decorator_rejects_invalid_retrieval_strategies() -> None:
         )
 
 
+def test_query_decorator_rejects_invalid_prompt_assemblers() -> None:
+    app = create_app()
+
+    with pytest.raises(
+        TypeError,
+        match="prompt_assembler must implement the PromptAssembler protocol",
+    ):
+        app.query(
+            "/query",
+            embedder=InMemoryEmbedder(),
+            vector_store=InMemoryVectorStore(),
+            llm=InMemoryLLM(),
+            prompt_assembler=cast(PromptAssembler, object()),
+        )
+
+
 @pytest.mark.asyncio
 async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
     app = create_app()
@@ -144,3 +185,28 @@ async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "custom-doc"
     assert "Custom retrieval" in response.json()["answer"]
+
+
+@pytest.mark.asyncio
+async def test_query_decorator_accepts_custom_prompt_assembler() -> None:
+    app = create_app()
+
+    @app.query(
+        "/query",
+        embedder=InMemoryEmbedder(),
+        vector_store=InMemoryVectorStore(),
+        llm=InMemoryLLM(),
+        prompt_assembler=StubPromptAssembler(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/query", json={"query": "What is FastRAG?"})
+
+    assert response.status_code == 200
+    assert response.json()["citations"][0]["source_id"] == "assembled-doc"
+    assert "Custom assembly" in response.json()["answer"]
