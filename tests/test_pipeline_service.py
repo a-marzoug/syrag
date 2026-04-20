@@ -1,8 +1,37 @@
 import pytest
 
+from fastrag.protocols import Chunker, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
-from fastrag.schemas import IngestRequest, QueryRequest
+from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest
 from fastrag.services import PipelineService
+
+
+class StubIngestionPipeline:
+    def __init__(self) -> None:
+        self.calls: list[tuple[IngestRequest, str, str, str]] = []
+
+    async def run(
+        self,
+        *,
+        request: IngestRequest,
+        chunker: Chunker,
+        embedder: Embedder,
+        vector_store: VectorStore,
+    ) -> IngestResponse:
+        self.calls.append(
+            (
+                request,
+                type(chunker).__name__,
+                type(embedder).__name__,
+                type(vector_store).__name__,
+            )
+        )
+        return IngestResponse(
+            status="completed",
+            ingested_documents=len(request.documents),
+            collection=request.collection,
+            tenant_id=request.tenant_id,
+        )
 
 
 @pytest.mark.asyncio
@@ -40,14 +69,26 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     assert query_response.citations[0].source_id == "overview-0"
     assert "FastRAG" in query_response.answer
 
-
-def test_pipeline_service_builds_source_documents() -> None:
-    service = PipelineService()
+@pytest.mark.asyncio
+async def test_pipeline_service_delegates_ingest_to_ingestion_pipeline() -> None:
+    ingestion_pipeline = StubIngestionPipeline()
+    service = PipelineService(ingestion_pipeline=ingestion_pipeline)
     request = IngestRequest(
-        documents=["doc one", "doc two"],
-        metadata={"source_id": "doc", "page_number": 1},
+        documents=["doc one"],
+        collection="docs",
     )
-    source_documents = service.build_source_documents_for_testing(request)
+    chunker = PassThroughChunker()
+    embedder = InMemoryEmbedder()
+    vector_store = InMemoryVectorStore()
 
-    assert source_documents[0].source_id == "doc-0"
-    assert source_documents[1].source_id == "doc-1"
+    response = await service.run_ingest(
+        request=request,
+        chunker=chunker,
+        embedder=embedder,
+        vector_store=vector_store,
+    )
+
+    assert response.ingested_documents == 1
+    assert ingestion_pipeline.calls == [
+        (request, "PassThroughChunker", "InMemoryEmbedder", "InMemoryVectorStore")
+    ]
