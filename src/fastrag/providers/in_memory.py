@@ -7,19 +7,21 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, Metadata, VectorStore
-from fastrag.schemas import Citation, QueryRequest, RAGResponse, RetrievedDocument
+from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
+from fastrag.schemas import Citation, DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
 
 TOKEN_PATTERN = re.compile(r"\b\w+\b")
 
 
 @dataclass(slots=True)
 class StoredDocument:
+    chunk_id: str
     source_id: str
     content: str
     embedding: tuple[float, ...]
     metadata: dict[str, Any]
     page_number: int | None
+    chunk_index: int
 
 
 class InMemoryEmbedder(Embedder):
@@ -64,34 +66,25 @@ class InMemoryVectorStore(VectorStore):
     async def upsert(
         self,
         *,
-        documents: Sequence[str],
+        chunks: Sequence[DocumentChunk],
         embeddings: Sequence[EmbeddingVector],
         collection: str | None = None,
         tenant_id: str | None = None,
-        metadata: Sequence[Metadata] | None = None,
     ) -> None:
-        if len(documents) != len(embeddings):
-            msg = "documents and embeddings must have the same length"
-            raise ValueError(msg)
-
-        if metadata is not None and len(metadata) != len(documents):
-            msg = "metadata must match the number of documents"
+        if len(chunks) != len(embeddings):
+            msg = "chunks and embeddings must have the same length"
             raise ValueError(msg)
 
         namespace = self._namespaces.setdefault((collection, tenant_id), {})
-        resolved_metadata = metadata or [{} for _ in documents]
-
-        for index, (document, embedding, item_metadata) in enumerate(
-            zip(documents, embeddings, resolved_metadata, strict=True)
-        ):
-            source_id = self._resolve_source_id(item_metadata, index)
-            page_number = self._coerce_page_number(item_metadata.get("page_number"))
-            namespace[source_id] = StoredDocument(
-                source_id=source_id,
-                content=document,
+        for chunk, embedding in zip(chunks, embeddings, strict=True):
+            namespace[chunk.chunk_id] = StoredDocument(
+                chunk_id=chunk.chunk_id,
+                source_id=chunk.source_id,
+                content=chunk.content,
                 embedding=tuple(float(value) for value in embedding),
-                metadata=dict(item_metadata),
-                page_number=page_number,
+                metadata=dict(chunk.metadata),
+                page_number=chunk.page_number,
+                chunk_index=chunk.chunk_index,
             )
 
     async def query(
@@ -102,7 +95,7 @@ class InMemoryVectorStore(VectorStore):
         collection: str | None = None,
         tenant_id: str | None = None,
         filters: Filters | None = None,
-    ) -> list[RetrievedDocument]:
+    ) -> list[RetrievedChunk]:
         namespace = self._namespaces.get((collection, tenant_id), {})
         normalized_query = tuple(float(value) for value in query_embedding)
         candidates = [
@@ -117,28 +110,17 @@ class InMemoryVectorStore(VectorStore):
         )
 
         return [
-            RetrievedDocument(
+            RetrievedChunk(
+                chunk_id=document.chunk_id,
                 source_id=document.source_id,
                 content=document.content,
                 score=self._cosine_similarity(normalized_query, document.embedding),
                 metadata=document.metadata,
                 page_number=document.page_number,
+                chunk_index=document.chunk_index,
             )
             for document in ranked_documents[:top_k]
         ]
-
-    def _resolve_source_id(self, metadata: Mapping[str, Any], index: int) -> str:
-        raw_source_id = metadata.get("source_id")
-        if isinstance(raw_source_id, str) and raw_source_id.strip():
-            return raw_source_id.strip()
-        return f"doc-{index}"
-
-    def _coerce_page_number(self, raw_page_number: Any) -> int | None:
-        if raw_page_number is None:
-            return None
-        if isinstance(raw_page_number, int) and raw_page_number > 0:
-            return raw_page_number
-        return None
 
     def _matches_filters(
         self,
@@ -180,7 +162,7 @@ class InMemoryLLM(LLM):
         self,
         *,
         query: QueryRequest,
-        context: Sequence[RetrievedDocument],
+        context: Sequence[RetrievedChunk],
     ) -> RAGResponse:
         limited_context = list(context[: self.max_context_documents])
         if not limited_context:

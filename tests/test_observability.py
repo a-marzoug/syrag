@@ -4,7 +4,7 @@ from httpx import ASGITransport, AsyncClient
 from fastrag.app import create_app
 from fastrag.observability import PipelineEvent
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import IngestRequest, QueryRequest
+from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -23,16 +23,26 @@ async def test_query_route_emits_stage_events() -> None:
         ]
     )
     await vector_store.upsert(
-        documents=[
-            "FastRAG is a production-first Python framework for RAG services.",
-            "It emphasizes observability, type safety, and multi-tenancy.",
+        chunks=[
+            DocumentChunk(
+                chunk_id="overview-1-chunk-0",
+                source_id="overview-1",
+                content="FastRAG is a production-first Python framework for RAG services.",
+                metadata={"source_id": "overview-1", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="overview-2-chunk-0",
+                source_id="overview-2",
+                content="It emphasizes observability, type safety, and multi-tenancy.",
+                metadata={"source_id": "overview-2", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
         ],
         embeddings=embeddings,
         collection="overview",
-        metadata=[
-            {"source_id": "overview-1", "page_number": 1},
-            {"source_id": "overview-2", "page_number": 1},
-        ],
     )
 
     @app.query(

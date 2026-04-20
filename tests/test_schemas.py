@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from fastrag.schemas import Citation, IngestRequest, QueryRequest, RAGResponse
+from fastrag.schemas import Citation, DocumentChunk, IngestRequest, QueryRequest, RAGResponse
 
 
 def test_ingest_request_requires_at_least_one_document() -> None:
@@ -35,3 +35,13 @@ def test_rag_response_preserves_typed_citations() -> None:
 
     assert response.citations[0].source_id == "prd"
     assert response.usage["completion_tokens"] == 42
+
+
+def test_document_chunk_requires_non_negative_chunk_index() -> None:
+    with pytest.raises(ValidationError):
+        DocumentChunk(
+            chunk_id="chunk-1",
+            source_id="doc-1",
+            content="Chunk content",
+            chunk_index=-1,
+        )

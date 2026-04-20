@@ -4,8 +4,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, Metadata, VectorStore
-from fastrag.schemas import IngestRequest, QueryRequest, RAGResponse, RetrievedDocument
+from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
+from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest, RAGResponse, RetrievedChunk
 
 
 class FailingEmbedder(Embedder):
@@ -17,11 +17,10 @@ class PassthroughVectorStore(VectorStore):
     async def upsert(
         self,
         *,
-        documents: Sequence[str],
+        chunks: Sequence[DocumentChunk],
         embeddings: Sequence[EmbeddingVector],
         collection: str | None = None,
         tenant_id: str | None = None,
-        metadata: Sequence[Metadata] | None = None,
     ) -> None:
         return None
 
@@ -33,7 +32,7 @@ class PassthroughVectorStore(VectorStore):
         collection: str | None = None,
         tenant_id: str | None = None,
         filters: Filters | None = None,
-    ) -> list[RetrievedDocument]:
+    ) -> list[RetrievedChunk]:
         return []
 
 
@@ -42,7 +41,7 @@ class PassthroughLLM(LLM):
         self,
         *,
         query: QueryRequest,
-        context: Sequence[RetrievedDocument],
+        context: Sequence[RetrievedChunk],
     ) -> RAGResponse:
         return RAGResponse(answer=query.query)
 

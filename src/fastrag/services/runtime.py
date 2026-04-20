@@ -4,7 +4,14 @@ from typing import Any
 from fastrag.errors import PipelineStageError
 from fastrag.observability import ObservabilityHub, PipelineEvent
 from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from fastrag.schemas import (
+    DocumentChunk,
+    IngestRequest,
+    IngestResponse,
+    QueryRequest,
+    RAGResponse,
+    SourceDocument,
+)
 
 
 class PipelineService:
@@ -121,21 +128,25 @@ class PipelineService:
         embedder: Embedder,
         vector_store: VectorStore,
     ) -> IngestResponse:
+        source_documents = self._build_source_documents(request)
+        chunks = self._build_document_chunks(source_documents)
         self._emit(
             operation="ingest",
             stage="embed",
             status="started",
             component=type(embedder).__name__,
-            details={"documents": len(request.documents)},
+            details={"documents": len(source_documents), "chunks": len(chunks)},
         )
         try:
-            embeddings = await embedder.embed(request.documents)
+            embeddings = await embedder.embed(
+                [source_document.content for source_document in source_documents]
+            )
             self._emit(
                 operation="ingest",
                 stage="embed",
                 status="succeeded",
                 component=type(embedder).__name__,
-                details={"documents": len(request.documents)},
+                details={"documents": len(source_documents), "chunks": len(chunks)},
             )
         except Exception as exc:
             self._emit_failure(
@@ -156,22 +167,21 @@ class PipelineService:
             stage="store",
             status="started",
             component=type(vector_store).__name__,
-            details={"documents": len(request.documents)},
+            details={"documents": len(source_documents), "chunks": len(chunks)},
         )
         try:
             await vector_store.upsert(
-                documents=request.documents,
+                chunks=chunks,
                 embeddings=embeddings,
                 collection=request.collection,
                 tenant_id=request.tenant_id,
-                metadata=self._expand_ingest_metadata(request),
             )
             self._emit(
                 operation="ingest",
                 stage="store",
                 status="succeeded",
                 component=type(vector_store).__name__,
-                details={"documents": len(request.documents)},
+                details={"documents": len(source_documents), "chunks": len(chunks)},
             )
         except Exception as exc:
             self._emit_failure(
@@ -189,31 +199,68 @@ class PipelineService:
 
         return IngestResponse(
             status="completed",
-            ingested_documents=len(request.documents),
+            ingested_documents=len(source_documents),
             collection=request.collection,
             tenant_id=request.tenant_id,
         )
 
-    def _expand_ingest_metadata(self, request: IngestRequest) -> list[dict[str, Any]]:
-        if len(request.documents) == 1:
-            return [dict(request.metadata)]
-
+    def _build_source_documents(self, request: IngestRequest) -> list[SourceDocument]:
         source_id = request.metadata.get("source_id")
-        metadata_items: list[dict[str, Any]] = []
+        page_number = self._coerce_page_number(request.metadata.get("page_number"))
+        source_documents: list[SourceDocument] = []
         for index, _document in enumerate(request.documents):
             metadata = dict(request.metadata)
+            normalized_source_id = f"doc-{index}"
             if isinstance(source_id, str) and source_id.strip():
-                metadata["source_id"] = f"{source_id.strip()}-{index}"
-            metadata_items.append(metadata)
+                normalized_source_id = source_id.strip()
+                if len(request.documents) > 1:
+                    normalized_source_id = f"{normalized_source_id}-{index}"
+                metadata["source_id"] = normalized_source_id
+            source_documents.append(
+                SourceDocument(
+                    source_id=normalized_source_id,
+                    content=request.documents[index],
+                    metadata=metadata,
+                    page_number=page_number,
+                )
+            )
 
-        return metadata_items
+        return source_documents
 
-    def expand_ingest_metadata_for_testing(
+    def _build_document_chunks(
+        self,
+        source_documents: Sequence[SourceDocument],
+    ) -> list[DocumentChunk]:
+        return [
+            DocumentChunk(
+                chunk_id=f"{source_document.source_id}-chunk-0",
+                source_id=source_document.source_id,
+                content=source_document.content,
+                metadata=dict(source_document.metadata),
+                page_number=source_document.page_number,
+                chunk_index=0,
+            )
+            for source_document in source_documents
+        ]
+
+    def build_source_documents_for_testing(
         self,
         request: IngestRequest,
-    ) -> Sequence[dict[str, Any]]:
+    ) -> Sequence[SourceDocument]:
         """Visible wrapper for focused unit tests."""
-        return self._expand_ingest_metadata(request)
+        return self._build_source_documents(request)
+
+    def build_document_chunks_for_testing(
+        self,
+        request: IngestRequest,
+    ) -> Sequence[DocumentChunk]:
+        """Visible wrapper for focused unit tests."""
+        return self._build_document_chunks(self._build_source_documents(request))
+
+    def _coerce_page_number(self, raw_page_number: Any) -> int | None:
+        if isinstance(raw_page_number, int) and raw_page_number > 0:
+            return raw_page_number
+        return None
 
     def _emit(
         self,

@@ -1,11 +1,10 @@
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
-from fastrag.schemas import QueryRequest, RAGResponse, RetrievedDocument
+from fastrag.schemas import DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
 
 type EmbeddingVector = Sequence[float]
 type Filters = Mapping[str, Any]
-type Metadata = Mapping[str, Any]
 
 
 @runtime_checkable
@@ -23,13 +22,12 @@ class VectorStore(Protocol):
     async def upsert(
         self,
         *,
-        documents: Sequence[str],
+        chunks: Sequence[DocumentChunk],
         embeddings: Sequence[EmbeddingVector],
         collection: str | None = None,
         tenant_id: str | None = None,
-        metadata: Sequence[Metadata] | None = None,
     ) -> None:
-        """Insert or update documents and their embeddings."""
+        """Insert or update chunks and their embeddings."""
 
     async def query(
         self,
@@ -39,8 +37,8 @@ class VectorStore(Protocol):
         collection: str | None = None,
         tenant_id: str | None = None,
         filters: Filters | None = None,
-    ) -> list[RetrievedDocument]:
-        """Retrieve the most relevant documents for a query embedding."""
+    ) -> list[RetrievedChunk]:
+        """Retrieve the most relevant chunks for a query embedding."""
 
 
 @runtime_checkable
@@ -51,6 +49,6 @@ class LLM(Protocol):
         self,
         *,
         query: QueryRequest,
-        context: Sequence[RetrievedDocument],
+        context: Sequence[RetrievedChunk],
     ) -> RAGResponse:
         """Return a typed response with answer text, citations, and usage."""

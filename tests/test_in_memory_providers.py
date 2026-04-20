@@ -2,7 +2,7 @@ import pytest
 
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import QueryRequest
+from fastrag.schemas import DocumentChunk, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -28,14 +28,27 @@ async def test_in_memory_vector_store_respects_collection_tenant_and_filters() -
     ]
     embeddings = await embedder.embed(documents)
     await store.upsert(
-        documents=documents,
+        chunks=[
+            DocumentChunk(
+                chunk_id="prd-chunk-0",
+                source_id="prd",
+                content=documents[0],
+                metadata={"source_id": "prd", "topic": "product", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="http-chunk-0",
+                source_id="http",
+                content=documents[1],
+                metadata={"source_id": "http", "topic": "transport", "page_number": 2},
+                page_number=2,
+                chunk_index=0,
+            ),
+        ],
         embeddings=embeddings,
         collection="product",
         tenant_id="tenant-a",
-        metadata=[
-            {"source_id": "prd", "topic": "product", "page_number": 1},
-            {"source_id": "http", "topic": "transport", "page_number": 2},
-        ],
     )
 
     query_embedding = (await embedder.embed(["production-first python framework"]))[0]
@@ -65,13 +78,26 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
     ]
     embeddings = await embedder.embed(documents)
     await store.upsert(
-        documents=documents,
+        chunks=[
+            DocumentChunk(
+                chunk_id="overview-1-chunk-0",
+                source_id="overview-1",
+                content=documents[0],
+                metadata={"source_id": "overview-1", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="overview-2-chunk-0",
+                source_id="overview-2",
+                content=documents[1],
+                metadata={"source_id": "overview-2", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+        ],
         embeddings=embeddings,
         collection="overview",
-        metadata=[
-            {"source_id": "overview-1", "page_number": 1},
-            {"source_id": "overview-2", "page_number": 1},
-        ],
     )
 
     query = QueryRequest(query="What does FastRAG emphasize?", collection="overview")

@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from fastrag.app import create_app
 from fastrag.protocols import Embedder
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import QueryRequest
+from fastrag.schemas import DocumentChunk, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -22,13 +22,26 @@ async def test_query_decorator_registers_grounded_query_route() -> None:
     ]
     embeddings = await embedder.embed(documents)
     await vector_store.upsert(
-        documents=documents,
+        chunks=[
+            DocumentChunk(
+                chunk_id="overview-1-chunk-0",
+                source_id="overview-1",
+                content=documents[0],
+                metadata={"source_id": "overview-1", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="overview-2-chunk-0",
+                source_id="overview-2",
+                content=documents[1],
+                metadata={"source_id": "overview-2", "page_number": 1},
+                page_number=1,
+                chunk_index=0,
+            ),
+        ],
         embeddings=embeddings,
         collection="overview",
-        metadata=[
-            {"source_id": "overview-1", "page_number": 1},
-            {"source_id": "overview-2", "page_number": 1},
-        ],
     )
 
     @app.query(

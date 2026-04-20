@@ -26,11 +26,14 @@ from fastrag.registry import (
 )
 from fastrag.schemas import (
     Citation,
+    DocumentChunk,
     IngestRequest,
     IngestResponse,
     QueryRequest,
     RAGResponse,
+    RetrievedChunk,
     RetrievedDocument,
+    SourceDocument,
 )
 
 __all__ = [
@@ -43,6 +46,7 @@ __all__ = [
     "ComponentDefaults",
     "ComponentResolver",
     "Citation",
+    "DocumentChunk",
     "Embedder",
     "FastRAG",
     "InMemoryProviderSettings",
@@ -58,7 +62,9 @@ __all__ = [
     "QueryRequest",
     "RAGResponse",
     "RegistryError",
+    "RetrievedChunk",
     "RetrievedDocument",
+    "SourceDocument",
     "Settings",
     "VectorStore",
     "app",

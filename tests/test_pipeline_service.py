@@ -40,15 +40,17 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     assert "FastRAG" in query_response.answer
 
 
-def test_pipeline_service_expands_metadata_for_multiple_documents() -> None:
+def test_pipeline_service_builds_source_documents_and_chunks() -> None:
     service = PipelineService()
-
-    metadata = service.expand_ingest_metadata_for_testing(
-        IngestRequest(
-            documents=["doc one", "doc two"],
-            metadata={"source_id": "doc", "page_number": 1},
-        )
+    request = IngestRequest(
+        documents=["doc one", "doc two"],
+        metadata={"source_id": "doc", "page_number": 1},
     )
+    source_documents = service.build_source_documents_for_testing(request)
+    chunks = service.build_document_chunks_for_testing(request)
 
-    assert metadata[0]["source_id"] == "doc-0"
-    assert metadata[1]["source_id"] == "doc-1"
+    assert source_documents[0].source_id == "doc-0"
+    assert source_documents[1].source_id == "doc-1"
+    assert chunks[0].chunk_id == "doc-0-chunk-0"
+    assert chunks[1].chunk_id == "doc-1-chunk-0"
+    assert chunks[0].source_id == "doc-0"

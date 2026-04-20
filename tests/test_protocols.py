@@ -3,7 +3,7 @@ from collections.abc import Sequence
 import pytest
 
 from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.schemas import Citation, QueryRequest, RAGResponse, RetrievedDocument
+from fastrag.schemas import Citation, DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
 
 
 class ExampleEmbedder:
@@ -15,11 +15,10 @@ class ExampleVectorStore:
     async def upsert(
         self,
         *,
-        documents: Sequence[str],
+        chunks: Sequence[DocumentChunk],
         embeddings: Sequence[Sequence[float]],
         collection: str | None = None,
         tenant_id: str | None = None,
-        metadata: Sequence[dict[str, object]] | None = None,
     ) -> None:
         return None
 
@@ -31,14 +30,16 @@ class ExampleVectorStore:
         collection: str | None = None,
         tenant_id: str | None = None,
         filters: dict[str, object] | None = None,
-    ) -> list[RetrievedDocument]:
+    ) -> list[RetrievedChunk]:
         return [
-            RetrievedDocument(
+            RetrievedChunk(
+                chunk_id="doc-1-chunk-0",
                 source_id="doc-1",
                 content="FastRAG wraps FastAPI for RAG workloads.",
                 score=0.95,
                 metadata={},
                 page_number=1,
+                chunk_index=0,
             )
         ]
 
@@ -48,7 +49,7 @@ class ExampleLLM:
         self,
         *,
         query: QueryRequest,
-        context: Sequence[RetrievedDocument],
+        context: Sequence[RetrievedChunk],
     ) -> RAGResponse:
         return RAGResponse(
             answer=f"Answering: {query.query}",
@@ -76,12 +77,14 @@ async def test_example_llm_returns_typed_response() -> None:
     response = await llm.generate(
         query=QueryRequest(query="What is FastRAG?"),
         context=[
-            RetrievedDocument(
+            RetrievedChunk(
+                chunk_id="prd-chunk-0",
                 source_id="prd",
                 content="FastRAG is a production-first Python framework for RAG services.",
                 score=0.99,
                 metadata={},
                 page_number=1,
+                chunk_index=0,
             )
         ],
     )

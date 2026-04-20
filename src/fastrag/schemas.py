@@ -40,12 +40,28 @@ class Citation(FastRAGSchema):
     page_number: int | None = Field(default=None, ge=1)
 
 
-class RetrievedDocument(FastRAGSchema):
+class SourceDocument(FastRAGSchema):
     source_id: str = Field(min_length=1)
     content: str = Field(min_length=1)
-    score: float = Field(ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
     page_number: int | None = Field(default=None, ge=1)
+
+
+class DocumentChunk(FastRAGSchema):
+    chunk_id: str = Field(min_length=1)
+    source_id: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    page_number: int | None = Field(default=None, ge=1)
+    chunk_index: int = Field(default=0, ge=0)
+
+
+class RetrievedChunk(DocumentChunk):
+    score: float = Field(ge=0.0, le=1.0)
+
+
+class RetrievedDocument(RetrievedChunk):
+    """Backward-compatible alias for retrieved chunk results."""
 
 
 class RAGResponse(FastRAGSchema):
