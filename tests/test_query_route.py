@@ -105,6 +105,22 @@ def test_query_decorator_rejects_invalid_components() -> None:
         )
 
 
+def test_query_decorator_rejects_invalid_retrieval_strategies() -> None:
+    app = create_app()
+
+    with pytest.raises(
+        TypeError,
+        match="retrieval_strategy must implement the RetrievalStrategy protocol",
+    ):
+        app.query(
+            "/query",
+            embedder=InMemoryEmbedder(),
+            vector_store=InMemoryVectorStore(),
+            llm=InMemoryLLM(),
+            retrieval_strategy=cast(RetrievalStrategy, object()),
+        )
+
+
 @pytest.mark.asyncio
 async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
     app = create_app()

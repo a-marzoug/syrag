@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, EmbeddingVector, VectorStore
 from fastrag.schemas import (
     Citation,
     DocumentChunk,
@@ -11,6 +11,7 @@ from fastrag.schemas import (
     RetrievedChunk,
     SourceDocument,
 )
+from fastrag.services import RetrievalStrategy
 
 
 class ExampleEmbedder:
@@ -90,11 +91,33 @@ class ExampleLLM:
         )
 
 
+class ExampleRetrievalStrategy:
+    async def retrieve(
+        self,
+        *,
+        request: QueryRequest,
+        query_embedding: EmbeddingVector,
+        vector_store: VectorStore,
+    ) -> list[RetrievedChunk]:
+        return [
+            RetrievedChunk(
+                chunk_id="doc-1-chunk-0",
+                source_id="doc-1",
+                content=f"Retrieved for: {request.query}",
+                score=0.95,
+                metadata={},
+                page_number=1,
+                chunk_index=0,
+            )
+        ]
+
+
 def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleEmbedder(), Embedder)
     assert isinstance(ExampleVectorStore(), VectorStore)
     assert isinstance(ExampleChunker(), Chunker)
     assert isinstance(ExampleLLM(), LLM)
+    assert isinstance(ExampleRetrievalStrategy(), RetrievalStrategy)
 
 
 @pytest.mark.asyncio
