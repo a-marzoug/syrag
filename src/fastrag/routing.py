@@ -3,7 +3,7 @@ from enum import Enum
 
 from fastapi import FastAPI
 
-from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 from fastrag.services import PipelineService
 
@@ -47,6 +47,7 @@ def build_ingest_decorator(
     api: FastAPI,
     pipeline: PipelineService,
     path: str,
+    chunker: Chunker,
     embedder: Embedder,
     vector_store: VectorStore,
     resolve_request: Callable[[IngestRequest | Awaitable[IngestRequest]], Awaitable[IngestRequest]],
@@ -59,6 +60,7 @@ def build_ingest_decorator(
             resolved_request = await resolve_request(handler(request))
             return await pipeline.run_ingest(
                 request=resolved_request,
+                chunker=chunker,
                 embedder=embedder,
                 vector_store=vector_store,
             )

@@ -2,8 +2,15 @@ from collections.abc import Sequence
 
 import pytest
 
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.schemas import Citation, DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
+from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.schemas import (
+    Citation,
+    DocumentChunk,
+    QueryRequest,
+    RAGResponse,
+    RetrievedChunk,
+    SourceDocument,
+)
 
 
 class ExampleEmbedder:
@@ -44,6 +51,24 @@ class ExampleVectorStore:
         ]
 
 
+class ExampleChunker:
+    async def chunk(
+        self,
+        documents: Sequence[SourceDocument],
+    ) -> list[DocumentChunk]:
+        return [
+            DocumentChunk(
+                chunk_id=f"{document.source_id}-chunk-0",
+                source_id=document.source_id,
+                content=document.content,
+                metadata=document.metadata,
+                page_number=document.page_number,
+                chunk_index=0,
+            )
+            for document in documents
+        ]
+
+
 class ExampleLLM:
     async def generate(
         self,
@@ -68,6 +93,7 @@ class ExampleLLM:
 def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleEmbedder(), Embedder)
     assert isinstance(ExampleVectorStore(), VectorStore)
+    assert isinstance(ExampleChunker(), Chunker)
     assert isinstance(ExampleLLM(), LLM)
 
 

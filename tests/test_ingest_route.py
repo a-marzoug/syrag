@@ -4,8 +4,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import Embedder
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from fastrag.protocols import Chunker, Embedder
+from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
 from fastrag.schemas import IngestRequest, QueryRequest
 
 
@@ -18,6 +18,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
 
     @app.ingest(
         "/ingest",
+        chunker=PassThroughChunker(),
         embedder=embedder,
         vector_store=vector_store,
     )
@@ -76,5 +77,17 @@ def test_ingest_decorator_rejects_invalid_components() -> None:
         app.ingest(
             "/ingest",
             embedder=cast(Embedder, object()),
+            vector_store=InMemoryVectorStore(),
+        )
+
+
+def test_ingest_decorator_rejects_invalid_chunkers() -> None:
+    app = create_app()
+
+    with pytest.raises(TypeError, match="chunker must implement the Chunker protocol"):
+        app.ingest(
+            "/ingest",
+            chunker=cast(Chunker, object()),
+            embedder=InMemoryEmbedder(),
             vector_store=InMemoryVectorStore(),
         )

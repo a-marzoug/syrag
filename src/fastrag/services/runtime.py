@@ -3,9 +3,8 @@ from typing import Any
 
 from fastrag.errors import PipelineStageError
 from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
 from fastrag.schemas import (
-    DocumentChunk,
     IngestRequest,
     IngestResponse,
     QueryRequest,
@@ -125,11 +124,41 @@ class PipelineService:
         self,
         *,
         request: IngestRequest,
+        chunker: Chunker,
         embedder: Embedder,
         vector_store: VectorStore,
     ) -> IngestResponse:
         source_documents = self._build_source_documents(request)
-        chunks = self._build_document_chunks(source_documents)
+        self._emit(
+            operation="ingest",
+            stage="chunk",
+            status="started",
+            component=type(chunker).__name__,
+            details={"documents": len(source_documents)},
+        )
+        try:
+            chunks = await chunker.chunk(source_documents)
+            self._emit(
+                operation="ingest",
+                stage="chunk",
+                status="succeeded",
+                component=type(chunker).__name__,
+                details={"documents": len(source_documents), "chunks": len(chunks)},
+            )
+        except Exception as exc:
+            self._emit_failure(
+                operation="ingest",
+                stage="chunk",
+                component=type(chunker).__name__,
+                error=exc,
+            )
+            raise PipelineStageError(
+                code="chunking_failed",
+                message="Failed to chunk the ingest documents.",
+                stage="chunk",
+                details={"component": type(chunker).__name__},
+            ) from exc
+
         self._emit(
             operation="ingest",
             stage="embed",
@@ -138,9 +167,7 @@ class PipelineService:
             details={"documents": len(source_documents), "chunks": len(chunks)},
         )
         try:
-            embeddings = await embedder.embed(
-                [source_document.content for source_document in source_documents]
-            )
+            embeddings = await embedder.embed([chunk.content for chunk in chunks])
             self._emit(
                 operation="ingest",
                 stage="embed",
@@ -227,35 +254,12 @@ class PipelineService:
 
         return source_documents
 
-    def _build_document_chunks(
-        self,
-        source_documents: Sequence[SourceDocument],
-    ) -> list[DocumentChunk]:
-        return [
-            DocumentChunk(
-                chunk_id=f"{source_document.source_id}-chunk-0",
-                source_id=source_document.source_id,
-                content=source_document.content,
-                metadata=dict(source_document.metadata),
-                page_number=source_document.page_number,
-                chunk_index=0,
-            )
-            for source_document in source_documents
-        ]
-
     def build_source_documents_for_testing(
         self,
         request: IngestRequest,
     ) -> Sequence[SourceDocument]:
         """Visible wrapper for focused unit tests."""
         return self._build_source_documents(request)
-
-    def build_document_chunks_for_testing(
-        self,
-        request: IngestRequest,
-    ) -> Sequence[DocumentChunk]:
-        """Visible wrapper for focused unit tests."""
-        return self._build_document_chunks(self._build_source_documents(request))
 
     def _coerce_page_number(self, raw_page_number: Any) -> int | None:
         if isinstance(raw_page_number, int) and raw_page_number > 0:

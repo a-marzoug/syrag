@@ -15,8 +15,8 @@ from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers import ProviderFactory
+from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
+from fastrag.providers import PassThroughChunker, ProviderFactory
 from fastrag.registry import ComponentRegistry
 from fastrag.routing import (
     IngestHandler,
@@ -63,6 +63,7 @@ class FastRAG:
         )
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
+        self.chunker = PassThroughChunker()
         self.api = FastAPI(
             title=title,
             version=version,
@@ -79,6 +80,7 @@ class FastRAG:
         self.api.state.pipeline = self.pipeline
         self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.provider_settings = self.bootstrap.provider_settings
+        self.api.state.chunker = self.chunker
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
@@ -152,16 +154,19 @@ class FastRAG:
         self,
         path: str,
         *,
+        chunker: Chunker | None = None,
         embedder: Embedder | str | None = None,
         vector_store: VectorStore | str | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[IngestHandler], IngestHandler]:
+        resolved_chunker = self._resolve_chunker(chunker)
         resolved_embedder = self.resolver.resolve_embedder(embedder)
         resolved_vector_store = self.resolver.resolve_vector_store(vector_store)
         return build_ingest_decorator(
             api=self.api,
             pipeline=self.pipeline,
             path=path,
+            chunker=resolved_chunker,
             embedder=resolved_embedder,
             vector_store=resolved_vector_store,
             resolve_request=self._resolve_ingest_request,
@@ -243,6 +248,15 @@ class FastRAG:
             resolved_result = result
 
         return resolved_result
+
+    def _resolve_chunker(self, chunker: Chunker | None) -> Chunker:
+        if chunker is None:
+            return self.chunker
+        if isinstance(chunker, Chunker):
+            return chunker
+
+        msg = "chunker must implement the Chunker protocol"
+        raise TypeError(msg)
 
 def create_app(
     settings: Settings | None = None,

@@ -9,12 +9,13 @@ from fastrag.config import (
     get_settings,
 )
 from fastrag.dependencies import ComponentResolver
-from fastrag.protocols import LLM, Embedder, VectorStore
+from fastrag.protocols import LLM, Chunker, Embedder, VectorStore
 from fastrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryProviderFactory,
     InMemoryVectorStore,
+    PassThroughChunker,
     ProviderFactory,
 )
 from fastrag.registry import (
@@ -46,6 +47,7 @@ __all__ = [
     "ComponentDefaults",
     "ComponentResolver",
     "Citation",
+    "Chunker",
     "DocumentChunk",
     "Embedder",
     "FastRAG",
@@ -57,6 +59,7 @@ __all__ = [
     "InMemoryProviderFactory",
     "InMemoryVectorStore",
     "LLM",
+    "PassThroughChunker",
     "ProviderSettings",
     "ProviderFactory",
     "QueryRequest",

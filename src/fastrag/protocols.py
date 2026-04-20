@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
-from fastrag.schemas import DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk
+from fastrag.schemas import DocumentChunk, QueryRequest, RAGResponse, RetrievedChunk, SourceDocument
 
 type EmbeddingVector = Sequence[float]
 type Filters = Mapping[str, Any]
@@ -39,6 +39,17 @@ class VectorStore(Protocol):
         filters: Filters | None = None,
     ) -> list[RetrievedChunk]:
         """Retrieve the most relevant chunks for a query embedding."""
+
+
+@runtime_checkable
+class Chunker(Protocol):
+    """Splits source documents into retrieval-ready chunks."""
+
+    async def chunk(
+        self,
+        documents: Sequence[SourceDocument],
+    ) -> list[DocumentChunk]:
+        """Return chunked representations derived from source documents."""
 
 
 @runtime_checkable

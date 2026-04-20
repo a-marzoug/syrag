@@ -3,7 +3,12 @@ from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
 from fastrag.observability import PipelineEvent
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from fastrag.providers import (
+    InMemoryEmbedder,
+    InMemoryLLM,
+    InMemoryVectorStore,
+    PassThroughChunker,
+)
 from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest
 
 
@@ -82,6 +87,7 @@ async def test_ingest_route_emits_stage_events() -> None:
 
     @app.ingest(
         "/ingest",
+        chunker=PassThroughChunker(),
         embedder=InMemoryEmbedder(),
         vector_store=InMemoryVectorStore(),
     )
@@ -96,6 +102,8 @@ async def test_ingest_route_emits_stage_events() -> None:
 
     assert response.status_code == 200
     assert [(event.stage, event.status) for event in events] == [
+        ("chunk", "started"),
+        ("chunk", "succeeded"),
         ("embed", "started"),
         ("embed", "succeeded"),
         ("store", "started"),
