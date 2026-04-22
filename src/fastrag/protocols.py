@@ -1,12 +1,15 @@
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
+from starlette.requests import Request
+
 from fastrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
     GenerationRequest,
     QueryRequest,
     RAGResponse,
+    RequestContext,
     RetrievedChunk,
     SourceDocument,
 )
@@ -58,6 +61,32 @@ class Chunker(Protocol):
         documents: Sequence[SourceDocument],
     ) -> list[DocumentChunk]:
         """Return chunked representations derived from source documents."""
+
+
+@runtime_checkable
+class RequestContextHook(Protocol):
+    """Builds request-scoped framework context from an incoming HTTP request."""
+
+    async def enrich(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        """Return the request context after applying request-scoped metadata."""
+
+
+@runtime_checkable
+class AuthHook(Protocol):
+    """Applies authentication/authorization context to a request-scoped context."""
+
+    async def authenticate(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        """Return the request context after authentication is applied."""
 
 
 @runtime_checkable

@@ -9,12 +9,15 @@ from fastrag.config import (
     get_settings,
 )
 from fastrag.dependencies import ComponentResolver
+from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
 from fastrag.protocols import (
     LLM,
+    AuthHook,
     Chunker,
     Embedder,
     GenerationPolicy,
     PromptAssembler,
+    RequestContextHook,
     VectorStore,
 )
 from fastrag.providers import (
@@ -41,6 +44,7 @@ from fastrag.schemas import (
     IngestResponse,
     QueryRequest,
     RAGResponse,
+    RequestContext,
     RetrievedChunk,
     RetrievedDocument,
     SourceDocument,
@@ -62,8 +66,10 @@ __all__ = [
     "ComponentDefaults",
     "ComponentResolver",
     "AssembledPrompt",
+    "AuthHook",
     "Citation",
     "Chunker",
+    "DefaultRequestContextHook",
     "DefaultGenerationPolicy",
     "DefaultPromptAssembler",
     "DocumentChunk",
@@ -80,12 +86,15 @@ __all__ = [
     "InMemoryProviderFactory",
     "InMemoryVectorStore",
     "LLM",
+    "NoOpAuthHook",
     "PassThroughChunker",
     "PromptAssembler",
     "ProviderSettings",
     "ProviderFactory",
     "QueryRequest",
     "RAGResponse",
+    "RequestContext",
+    "RequestContextHook",
     "RegistryError",
     "RetrievalStrategy",
     "RetrievedChunk",

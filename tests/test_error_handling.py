@@ -2,10 +2,13 @@ from collections.abc import Sequence
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from starlette.requests import Request
 
 from fastrag.app import create_app
+from fastrag.errors import FastRAGError
 from fastrag.protocols import (
     LLM,
+    AuthHook,
     Embedder,
     EmbeddingVector,
     Filters,
@@ -19,6 +22,7 @@ from fastrag.schemas import (
     IngestRequest,
     QueryRequest,
     RAGResponse,
+    RequestContext,
     RetrievedChunk,
 )
 
@@ -72,6 +76,22 @@ class FailingGenerationPolicy(GenerationPolicy):
         prompt: AssembledPrompt,
     ) -> GenerationRequest:
         raise RuntimeError("generation policy crashed")
+
+
+class FailingAuthHook(AuthHook):
+    async def authenticate(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        raise FastRAGError(
+            code="authentication_failed",
+            message="Failed to authenticate the request.",
+            stage="auth",
+            status_code=401,
+            details={"component": type(self).__name__},
+        )
 
 
 @pytest.mark.asyncio
@@ -160,5 +180,36 @@ async def test_generation_policy_failures_return_stage_aware_error_response() ->
             "message": "Failed to apply the generation policy.",
             "stage": "policy",
             "details": {"component": "FailingGenerationPolicy"},
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_auth_hook_failures_return_stage_aware_error_response() -> None:
+    app = create_app()
+    app.set_auth_hook(FailingAuthHook())
+
+    @app.query(
+        "/query",
+        embedder=PassthroughEmbedder(),
+        vector_store=PassthroughVectorStore(),
+        llm=PassthroughLLM(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/query", json={"query": "What is FastRAG?"})
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "error": {
+            "code": "authentication_failed",
+            "message": "Failed to authenticate the request.",
+            "stage": "auth",
+            "details": {"component": "FailingAuthHook"},
         }
     }

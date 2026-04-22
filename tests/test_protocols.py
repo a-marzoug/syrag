@@ -1,14 +1,17 @@
 from collections.abc import Sequence
 
 import pytest
+from starlette.requests import Request
 
 from fastrag.protocols import (
     LLM,
+    AuthHook,
     Chunker,
     Embedder,
     EmbeddingVector,
     GenerationPolicy,
     PromptAssembler,
+    RequestContextHook,
     VectorStore,
 )
 from fastrag.schemas import (
@@ -18,6 +21,7 @@ from fastrag.schemas import (
     GenerationRequest,
     QueryRequest,
     RAGResponse,
+    RequestContext,
     RetrievedChunk,
     SourceDocument,
 )
@@ -78,6 +82,28 @@ class ExampleChunker:
             )
             for document in documents
         ]
+
+
+class ExampleRequestContextHook:
+    async def enrich(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        return context.model_copy(
+            update={"request_id": "request-1", "metadata": {"path": request.url.path}}
+        )
+
+
+class ExampleAuthHook:
+    async def authenticate(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        return context.model_copy(update={"subject_id": request.headers.get("x-user-id")})
 
 
 class ExampleLLM:
@@ -154,6 +180,8 @@ def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleEmbedder(), Embedder)
     assert isinstance(ExampleVectorStore(), VectorStore)
     assert isinstance(ExampleChunker(), Chunker)
+    assert isinstance(ExampleRequestContextHook(), RequestContextHook)
+    assert isinstance(ExampleAuthHook(), AuthHook)
     assert isinstance(ExampleLLM(), LLM)
     assert isinstance(ExampleGenerationPolicy(), GenerationPolicy)
     assert isinstance(ExamplePromptAssembler(), PromptAssembler)

@@ -33,6 +33,14 @@ class QueryRequest(FastRAGSchema):
     filters: dict[str, Any] = Field(default_factory=dict)
 
 
+class RequestContext(FastRAGSchema):
+    request_id: str | None = Field(default=None)
+    subject_id: str | None = Field(default=None)
+    auth_scheme: str | None = Field(default=None)
+    scopes: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class Citation(FastRAGSchema):
     source_id: str = Field(min_length=1)
     score: float = Field(ge=0.0, le=1.0)

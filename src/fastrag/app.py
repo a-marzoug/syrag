@@ -14,13 +14,16 @@ from fastrag.bootstrap import BootstrapService
 from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
+from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
 from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import (
     LLM,
+    AuthHook,
     Chunker,
     Embedder,
     GenerationPolicy,
     PromptAssembler,
+    RequestContextHook,
     VectorStore,
 )
 from fastrag.providers import PassThroughChunker, ProviderFactory
@@ -36,6 +39,7 @@ from fastrag.schemas import (
     ErrorResponse,
     IngestRequest,
     QueryRequest,
+    RequestContext,
 )
 from fastrag.services import (
     DefaultGenerationPolicy,
@@ -76,9 +80,11 @@ class FastRAG:
         )
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
+        self.auth_hook: AuthHook = NoOpAuthHook()
         self.chunker = PassThroughChunker()
         self.generation_policy = DefaultGenerationPolicy()
         self.prompt_assembler = DefaultPromptAssembler()
+        self.request_context_hook: RequestContextHook = DefaultRequestContextHook()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
         self.pipeline.generation_policy = self.generation_policy
         self.pipeline.prompt_assembler = self.prompt_assembler
@@ -99,14 +105,17 @@ class FastRAG:
         self.api.state.pipeline = self.pipeline
         self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.provider_settings = self.bootstrap.provider_settings
+        self.api.state.auth_hook = self.auth_hook
         self.api.state.chunker = self.chunker
         self.api.state.generation_policy = self.generation_policy
         self.api.state.prompt_assembler = self.prompt_assembler
+        self.api.state.request_context_hook = self.request_context_hook
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
         self._register_exception_handlers()
+        self._register_request_context_middleware()
         self._register_system_routes()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -233,21 +242,66 @@ class FastRAG:
     def add_event_listener(self, listener: EventListener) -> None:
         self.observability.add_listener(listener)
 
+    def set_request_context_hook(self, hook: RequestContextHook) -> None:
+        if not isinstance(hook, RequestContextHook):
+            msg = "request_context_hook must implement the RequestContextHook protocol"
+            raise TypeError(msg)
+        self.request_context_hook = hook
+        self.api.state.request_context_hook = hook
+
+    def set_auth_hook(self, hook: AuthHook) -> None:
+        if not isinstance(hook, AuthHook):
+            msg = "auth_hook must implement the AuthHook protocol"
+            raise TypeError(msg)
+        self.auth_hook = hook
+        self.api.state.auth_hook = hook
+
+    def get_request_context(self, request: Request) -> RequestContext:
+        context = getattr(request.state, "fastrag_context", None)
+        if isinstance(context, RequestContext):
+            return context
+
+        msg = "Request context is not available for this request"
+        raise RuntimeError(msg)
+
     def _register_exception_handlers(self) -> None:
         @self.api.exception_handler(FastRAGError)
         async def handle_fastrag_error(
             _request: Request,
             exc: FastRAGError,
         ) -> JSONResponse:
-            response = ErrorResponse(
-                error=ErrorDetail(
-                    code=exc.code,
-                    message=exc.message,
-                    stage=exc.stage,
-                    details=exc.details,
-                )
+            return self._build_error_response(exc)
+
+    def _build_error_response(self, exc: FastRAGError) -> JSONResponse:
+        response = ErrorResponse(
+            error=ErrorDetail(
+                code=exc.code,
+                message=exc.message,
+                stage=exc.stage,
+                details=exc.details,
             )
-            return JSONResponse(status_code=exc.status_code, content=response.model_dump())
+        )
+        return JSONResponse(status_code=exc.status_code, content=response.model_dump())
+
+    def _register_request_context_middleware(self) -> None:
+        @self.api.middleware("http")
+        async def request_context_middleware(
+            request: Request,
+            call_next: Callable[[Request], Awaitable[Response]],
+        ) -> Response:
+            context = RequestContext()
+            try:
+                context = await self.request_context_hook.enrich(request=request, context=context)
+                context = await self.auth_hook.authenticate(request=request, context=context)
+            except FastRAGError as exc:
+                return self._build_error_response(exc)
+            if context.request_id is None:
+                context = context.model_copy(update={"request_id": "unknown"})
+
+            request.state.fastrag_context = context
+            response = await call_next(request)
+            response.headers.setdefault("x-request-id", context.request_id or "unknown")
+            return response
 
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])
