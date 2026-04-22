@@ -2,7 +2,14 @@ from collections.abc import Sequence
 
 import pytest
 
-from fastrag.protocols import Chunker, Embedder, EmbeddingVector, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    Chunker,
+    Embedder,
+    EmbeddingVector,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
@@ -11,6 +18,7 @@ from fastrag.providers import (
 )
 from fastrag.schemas import (
     AssembledPrompt,
+    GenerationRequest,
     IngestRequest,
     IngestResponse,
     QueryRequest,
@@ -103,6 +111,35 @@ class StubPromptAssembler(PromptAssembler):
                 )
             ],
             prompt=f"Custom assembled prompt for: {query.query}",
+        )
+
+
+class StubGenerationPolicy(GenerationPolicy):
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, list[str]]] = []
+
+    async def apply(
+        self,
+        *,
+        prompt: AssembledPrompt,
+    ) -> GenerationRequest:
+        self.calls.append((prompt.query.query, [chunk.source_id for chunk in prompt.context]))
+        return GenerationRequest(
+            query=prompt.query,
+            context=[
+                RetrievedChunk(
+                    chunk_id="policy-chunk-0",
+                    source_id="policy-doc",
+                    content="Generation policy can trim or replace the final context.",
+                    score=0.77,
+                    metadata={},
+                    page_number=1,
+                    chunk_index=0,
+                )
+            ],
+            prompt=prompt.prompt,
+            system_prompt="Be concise.",
+            require_citations=False,
         )
 
 
@@ -215,3 +252,32 @@ async def test_pipeline_service_delegates_prompt_assembly_to_prompt_assembler() 
 
     assert response.citations[0].source_id == "assembled-doc"
     assert prompt_assembler.calls == [(request, ["overview-0"])]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_service_delegates_generation_policy_to_generation_policy() -> None:
+    retrieval_strategy = StubRetrievalStrategy()
+    prompt_assembler = StubPromptAssembler()
+    generation_policy = StubGenerationPolicy()
+    service = PipelineService(
+        retrieval_strategy=retrieval_strategy,
+        prompt_assembler=prompt_assembler,
+        generation_policy=generation_policy,
+    )
+    embedder = InMemoryEmbedder()
+    vector_store = InMemoryVectorStore()
+    llm = InMemoryLLM()
+    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+
+    response = await service.run_query(
+        request=request,
+        embedder=embedder,
+        vector_store=vector_store,
+        llm=llm,
+    )
+
+    assert response.answer.endswith("Generation policy can trim or replace the final context.")
+    assert response.citations == []
+    assert generation_policy.calls == [
+        (request.query, ["assembled-doc"])
+    ]

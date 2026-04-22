@@ -70,6 +70,14 @@ class AssembledPrompt(FastRAGSchema):
     prompt: str = Field(min_length=1)
 
 
+class GenerationRequest(FastRAGSchema):
+    query: QueryRequest
+    context: list[RetrievedChunk] = Field(default_factory=list)
+    prompt: str = Field(min_length=1)
+    system_prompt: str | None = Field(default=None)
+    require_citations: bool = Field(default=True)
+
+
 class RAGResponse(FastRAGSchema):
     answer: str = Field(min_length=1)
     citations: list[Citation] = Field(default_factory=list)

@@ -2,7 +2,7 @@ import pytest
 
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import AssembledPrompt, DocumentChunk, QueryRequest
+from fastrag.schemas import DocumentChunk, GenerationRequest, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -108,10 +108,12 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
         collection=query.collection,
     )
     response = await llm.generate(
-        prompt=AssembledPrompt(
+        generation=GenerationRequest(
             query=query,
             context=context,
             prompt=f"Question: {query.query}",
+            system_prompt="Ground the answer in context.",
+            require_citations=True,
         )
     )
 

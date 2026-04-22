@@ -2,11 +2,20 @@ from collections.abc import Sequence
 
 import pytest
 
-from fastrag.protocols import LLM, Chunker, Embedder, EmbeddingVector, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    LLM,
+    Chunker,
+    Embedder,
+    EmbeddingVector,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.schemas import (
     AssembledPrompt,
     Citation,
     DocumentChunk,
+    GenerationRequest,
     QueryRequest,
     RAGResponse,
     RetrievedChunk,
@@ -75,16 +84,16 @@ class ExampleLLM:
     async def generate(
         self,
         *,
-        prompt: AssembledPrompt,
+        generation: GenerationRequest,
     ) -> RAGResponse:
         return RAGResponse(
-            answer=f"Answering: {prompt.query.query}",
+            answer=f"Answering: {generation.query.query}",
             citations=[
                 Citation(
-                    source_id=prompt.context[0].source_id,
-                    score=prompt.context[0].score,
-                    snippet=prompt.context[0].content,
-                    page_number=prompt.context[0].page_number,
+                    source_id=generation.context[0].source_id,
+                    score=generation.context[0].score,
+                    snippet=generation.context[0].content,
+                    page_number=generation.context[0].page_number,
                 )
             ],
             usage={"prompt_tokens": 64, "completion_tokens": 16},
@@ -102,6 +111,21 @@ class ExamplePromptAssembler:
             query=query,
             context=list(context),
             prompt=f"Question: {query.query}",
+        )
+
+
+class ExampleGenerationPolicy:
+    async def apply(
+        self,
+        *,
+        prompt: AssembledPrompt,
+    ) -> GenerationRequest:
+        return GenerationRequest(
+            query=prompt.query,
+            context=prompt.context,
+            prompt=prompt.prompt,
+            system_prompt="Ground the answer in context.",
+            require_citations=True,
         )
 
 
@@ -131,6 +155,7 @@ def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleVectorStore(), VectorStore)
     assert isinstance(ExampleChunker(), Chunker)
     assert isinstance(ExampleLLM(), LLM)
+    assert isinstance(ExampleGenerationPolicy(), GenerationPolicy)
     assert isinstance(ExamplePromptAssembler(), PromptAssembler)
     assert isinstance(ExampleRetrievalStrategy(), RetrievalStrategy)
 
@@ -139,7 +164,7 @@ def test_example_components_match_runtime_protocols() -> None:
 async def test_example_llm_returns_typed_response() -> None:
     llm = ExampleLLM()
     response = await llm.generate(
-        prompt=AssembledPrompt(
+        generation=GenerationRequest(
             query=QueryRequest(query="What is FastRAG?"),
             context=[
                 RetrievedChunk(
@@ -153,6 +178,8 @@ async def test_example_llm_returns_typed_response() -> None:
                 )
             ],
             prompt="Question: What is FastRAG?",
+            system_prompt="Ground the answer in context.",
+            require_citations=True,
         ),
     )
 

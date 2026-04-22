@@ -9,7 +9,14 @@ from fastrag.config import (
     get_settings,
 )
 from fastrag.dependencies import ComponentResolver
-from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    LLM,
+    Chunker,
+    Embedder,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
@@ -29,6 +36,7 @@ from fastrag.schemas import (
     AssembledPrompt,
     Citation,
     DocumentChunk,
+    GenerationRequest,
     IngestRequest,
     IngestResponse,
     QueryRequest,
@@ -38,6 +46,7 @@ from fastrag.schemas import (
     SourceDocument,
 )
 from fastrag.services import (
+    DefaultGenerationPolicy,
     DefaultPromptAssembler,
     DefaultRetrievalStrategy,
     RetrievalStrategy,
@@ -55,11 +64,14 @@ __all__ = [
     "AssembledPrompt",
     "Citation",
     "Chunker",
+    "DefaultGenerationPolicy",
     "DefaultPromptAssembler",
     "DocumentChunk",
     "DefaultRetrievalStrategy",
     "Embedder",
     "FastRAG",
+    "GenerationPolicy",
+    "GenerationRequest",
     "InMemoryProviderSettings",
     "IngestRequest",
     "IngestResponse",

@@ -15,7 +15,14 @@ from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
 from fastrag.observability import EventListener, ObservabilityHub
-from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    LLM,
+    Chunker,
+    Embedder,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.providers import PassThroughChunker, ProviderFactory
 from fastrag.registry import ComponentRegistry
 from fastrag.routing import (
@@ -31,6 +38,7 @@ from fastrag.schemas import (
     QueryRequest,
 )
 from fastrag.services import (
+    DefaultGenerationPolicy,
     DefaultPromptAssembler,
     DefaultRetrievalStrategy,
     PipelineService,
@@ -69,8 +77,10 @@ class FastRAG:
         self.observability = ObservabilityHub()
         self.pipeline = PipelineService(observability=self.observability)
         self.chunker = PassThroughChunker()
+        self.generation_policy = DefaultGenerationPolicy()
         self.prompt_assembler = DefaultPromptAssembler()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.pipeline.generation_policy = self.generation_policy
         self.pipeline.prompt_assembler = self.prompt_assembler
         self.pipeline.retrieval_strategy = self.retrieval_strategy
         self.api = FastAPI(
@@ -90,6 +100,7 @@ class FastRAG:
         self.api.state.provider_factory = self.bootstrap.factory
         self.api.state.provider_settings = self.bootstrap.provider_settings
         self.api.state.chunker = self.chunker
+        self.api.state.generation_policy = self.generation_policy
         self.api.state.prompt_assembler = self.prompt_assembler
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
@@ -147,6 +158,7 @@ class FastRAG:
         llm: LLM | str | None = None,
         retrieval_strategy: RetrievalStrategy | None = None,
         prompt_assembler: PromptAssembler | None = None,
+        generation_policy: GenerationPolicy | None = None,
         tags: Sequence[str | Enum] | None = None,
     ) -> Callable[[QueryHandler], QueryHandler]:
         resolved_embedder = self.resolver.resolve_embedder(embedder)
@@ -154,6 +166,7 @@ class FastRAG:
         resolved_llm = self.resolver.resolve_llm(llm)
         resolved_retrieval_strategy = self._resolve_retrieval_strategy(retrieval_strategy)
         resolved_prompt_assembler = self._resolve_prompt_assembler(prompt_assembler)
+        resolved_generation_policy = self._resolve_generation_policy(generation_policy)
         return build_query_decorator(
             api=self.api,
             pipeline=self.pipeline,
@@ -163,6 +176,7 @@ class FastRAG:
             llm=resolved_llm,
             retrieval_strategy=resolved_retrieval_strategy,
             prompt_assembler=resolved_prompt_assembler,
+            generation_policy=resolved_generation_policy,
             resolve_request=self._resolve_query_request,
             tags=tags,
         )
@@ -297,6 +311,18 @@ class FastRAG:
             return prompt_assembler
 
         msg = "prompt_assembler must implement the PromptAssembler protocol"
+        raise TypeError(msg)
+
+    def _resolve_generation_policy(
+        self,
+        generation_policy: GenerationPolicy | None,
+    ) -> GenerationPolicy:
+        if generation_policy is None:
+            return self.generation_policy
+        if isinstance(generation_policy, GenerationPolicy):
+            return generation_policy
+
+        msg = "generation_policy must implement the GenerationPolicy protocol"
         raise TypeError(msg)
 
 def create_app(

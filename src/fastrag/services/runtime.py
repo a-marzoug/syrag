@@ -2,9 +2,17 @@ from typing import Any
 
 from fastrag.errors import PipelineStageError
 from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import LLM, Chunker, Embedder, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    LLM,
+    Chunker,
+    Embedder,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
 from fastrag.services.assembly import DefaultPromptAssembler
+from fastrag.services.generation import DefaultGenerationPolicy
 from fastrag.services.ingest import DefaultIngestionPipeline, IngestionPipeline
 from fastrag.services.retrieval import DefaultRetrievalStrategy, RetrievalStrategy
 
@@ -18,6 +26,7 @@ class PipelineService:
         ingestion_pipeline: IngestionPipeline | None = None,
         retrieval_strategy: RetrievalStrategy | None = None,
         prompt_assembler: PromptAssembler | None = None,
+        generation_policy: GenerationPolicy | None = None,
     ) -> None:
         self.observability = observability or ObservabilityHub()
         self.ingestion_pipeline = ingestion_pipeline or DefaultIngestionPipeline(
@@ -27,6 +36,7 @@ class PipelineService:
             observability=self.observability
         )
         self.prompt_assembler = prompt_assembler or DefaultPromptAssembler()
+        self.generation_policy = generation_policy or DefaultGenerationPolicy()
 
     async def run_query(
         self,
@@ -37,6 +47,7 @@ class PipelineService:
         llm: LLM,
         retrieval_strategy: RetrievalStrategy | None = None,
         prompt_assembler: PromptAssembler | None = None,
+        generation_policy: GenerationPolicy | None = None,
     ) -> RAGResponse:
         self._emit(
             operation="query",
@@ -102,6 +113,39 @@ class PipelineService:
                 details={"component": type(assembler).__name__},
             ) from exc
 
+        policy = generation_policy or self.generation_policy
+        self._emit(
+            operation="query",
+            stage="policy",
+            status="started",
+            component=type(policy).__name__,
+        )
+        try:
+            generation_request = await policy.apply(prompt=assembled_prompt)
+            self._emit(
+                operation="query",
+                stage="policy",
+                status="succeeded",
+                component=type(policy).__name__,
+                details={
+                    "context_chunks": len(generation_request.context),
+                    "require_citations": generation_request.require_citations,
+                },
+            )
+        except Exception as exc:
+            self._emit_failure(
+                operation="query",
+                stage="policy",
+                component=type(policy).__name__,
+                error=exc,
+            )
+            raise PipelineStageError(
+                code="generation_policy_failed",
+                message="Failed to apply the generation policy.",
+                stage="policy",
+                details={"component": type(policy).__name__},
+            ) from exc
+
         self._emit(
             operation="query",
             stage="generate",
@@ -109,7 +153,7 @@ class PipelineService:
             component=type(llm).__name__,
         )
         try:
-            response = await llm.generate(prompt=assembled_prompt)
+            response = await llm.generate(generation=generation_request)
             self._emit(
                 operation="query",
                 stage="generate",

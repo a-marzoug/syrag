@@ -4,10 +4,18 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
+from fastrag.protocols import (
+    LLM,
+    Embedder,
+    EmbeddingVector,
+    Filters,
+    GenerationPolicy,
+    VectorStore,
+)
 from fastrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
+    GenerationRequest,
     IngestRequest,
     QueryRequest,
     RAGResponse,
@@ -18,6 +26,11 @@ from fastrag.schemas import (
 class FailingEmbedder(Embedder):
     async def embed(self, texts: Sequence[str]) -> list[list[float]]:
         raise RuntimeError("embedder crashed")
+
+
+class PassthroughEmbedder(Embedder):
+    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        return [[0.0] for _ in texts]
 
 
 class PassthroughVectorStore(VectorStore):
@@ -47,9 +60,18 @@ class PassthroughLLM(LLM):
     async def generate(
         self,
         *,
-        prompt: AssembledPrompt,
+        generation: GenerationRequest,
     ) -> RAGResponse:
-        return RAGResponse(answer=prompt.query.query)
+        return RAGResponse(answer=generation.query.query)
+
+
+class FailingGenerationPolicy(GenerationPolicy):
+    async def apply(
+        self,
+        *,
+        prompt: AssembledPrompt,
+    ) -> GenerationRequest:
+        raise RuntimeError("generation policy crashed")
 
 
 @pytest.mark.asyncio
@@ -107,5 +129,36 @@ async def test_ingest_failures_return_stage_aware_error_response() -> None:
             "message": "Failed to embed the ingest documents.",
             "stage": "embed",
             "details": {"component": "FailingEmbedder"},
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_generation_policy_failures_return_stage_aware_error_response() -> None:
+    app = create_app()
+
+    @app.query(
+        "/query",
+        embedder=PassthroughEmbedder(),
+        vector_store=PassthroughVectorStore(),
+        llm=PassthroughLLM(),
+        generation_policy=FailingGenerationPolicy(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/query", json={"query": "What is FastRAG?"})
+
+    assert response.status_code == 500
+    assert response.json() == {
+        "error": {
+            "code": "generation_policy_failed",
+            "message": "Failed to apply the generation policy.",
+            "stage": "policy",
+            "details": {"component": "FailingGenerationPolicy"},
         }
     }

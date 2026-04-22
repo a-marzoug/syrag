@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
-from fastrag.schemas import AssembledPrompt, Citation, DocumentChunk, RAGResponse, RetrievedChunk
+from fastrag.schemas import Citation, DocumentChunk, GenerationRequest, RAGResponse, RetrievedChunk
 
 TOKEN_PATTERN = re.compile(r"\b\w+\b")
 
@@ -161,32 +161,47 @@ class InMemoryLLM(LLM):
     async def generate(
         self,
         *,
-        prompt: AssembledPrompt,
+        generation: GenerationRequest,
     ) -> RAGResponse:
-        limited_context = list(prompt.context[: self.max_context_documents])
+        limited_context = list(generation.context[: self.max_context_documents])
+        effective_prompt = self._effective_prompt(generation)
         if not limited_context:
             return RAGResponse(
-                answer=f"No grounded context was available for query: {prompt.query.query}",
+                answer=f"No grounded context was available for query: {generation.query.query}",
                 citations=[],
-                usage=self._usage_for(prompt.prompt, ""),
+                usage=self._usage_for(effective_prompt, ""),
             )
 
         supporting_passages = " ".join(document.content for document in limited_context)
-        answer = f"Grounded answer for '{prompt.query.query}': {supporting_passages}"
+        answer = f"Grounded answer for '{generation.query.query}': {supporting_passages}"
 
         return RAGResponse(
             answer=answer,
-            citations=[
-                Citation(
-                    source_id=document.source_id,
-                    score=document.score,
-                    snippet=document.content,
-                    page_number=document.page_number,
-                )
-                for document in limited_context
-            ],
-            usage=self._usage_for(prompt.prompt, answer),
+            citations=self._citations_for(limited_context, generation.require_citations),
+            usage=self._usage_for(effective_prompt, answer),
         )
+
+    def _effective_prompt(self, generation: GenerationRequest) -> str:
+        if generation.system_prompt is None:
+            return generation.prompt
+        return f"{generation.system_prompt}\n\n{generation.prompt}"
+
+    def _citations_for(
+        self,
+        context: Sequence[RetrievedChunk],
+        require_citations: bool,
+    ) -> list[Citation]:
+        if not require_citations:
+            return []
+        return [
+            Citation(
+                source_id=document.source_id,
+                score=document.score,
+                snippet=document.content,
+                page_number=document.page_number,
+            )
+            for document in context
+        ]
 
     def _usage_for(self, prompt: str, answer: str) -> dict[str, int]:
         return {

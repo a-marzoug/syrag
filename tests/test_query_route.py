@@ -5,9 +5,21 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
-from fastrag.protocols import Embedder, EmbeddingVector, PromptAssembler, VectorStore
+from fastrag.protocols import (
+    Embedder,
+    EmbeddingVector,
+    GenerationPolicy,
+    PromptAssembler,
+    VectorStore,
+)
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import AssembledPrompt, DocumentChunk, QueryRequest, RetrievedChunk
+from fastrag.schemas import (
+    AssembledPrompt,
+    DocumentChunk,
+    GenerationRequest,
+    QueryRequest,
+    RetrievedChunk,
+)
 from fastrag.services import RetrievalStrategy
 
 
@@ -53,6 +65,31 @@ class StubPromptAssembler(PromptAssembler):
                 )
             ],
             prompt=f"Custom assembled prompt for: {query.query}",
+        )
+
+
+class StubGenerationPolicy(GenerationPolicy):
+    async def apply(
+        self,
+        *,
+        prompt: AssembledPrompt,
+    ) -> GenerationRequest:
+        return GenerationRequest(
+            query=prompt.query,
+            context=[
+                RetrievedChunk(
+                    chunk_id="policy-chunk-0",
+                    source_id="policy-doc",
+                    content=f"Custom generation policy for: {prompt.query.query}",
+                    score=0.82,
+                    metadata={},
+                    page_number=1,
+                    chunk_index=0,
+                )
+            ],
+            prompt=prompt.prompt,
+            system_prompt="Be concise.",
+            require_citations=False,
         )
 
 
@@ -162,6 +199,22 @@ def test_query_decorator_rejects_invalid_prompt_assemblers() -> None:
         )
 
 
+def test_query_decorator_rejects_invalid_generation_policies() -> None:
+    app = create_app()
+
+    with pytest.raises(
+        TypeError,
+        match="generation_policy must implement the GenerationPolicy protocol",
+    ):
+        app.query(
+            "/query",
+            embedder=InMemoryEmbedder(),
+            vector_store=InMemoryVectorStore(),
+            llm=InMemoryLLM(),
+            generation_policy=cast(GenerationPolicy, object()),
+        )
+
+
 @pytest.mark.asyncio
 async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
     app = create_app()
@@ -210,3 +263,28 @@ async def test_query_decorator_accepts_custom_prompt_assembler() -> None:
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "assembled-doc"
     assert "Custom assembly" in response.json()["answer"]
+
+
+@pytest.mark.asyncio
+async def test_query_decorator_accepts_custom_generation_policy() -> None:
+    app = create_app()
+
+    @app.query(
+        "/query",
+        embedder=InMemoryEmbedder(),
+        vector_store=InMemoryVectorStore(),
+        llm=InMemoryLLM(),
+        generation_policy=StubGenerationPolicy(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post("/query", json={"query": "What is FastRAG?"})
+
+    assert response.status_code == 200
+    assert response.json()["citations"] == []
+    assert "Custom generation policy" in response.json()["answer"]

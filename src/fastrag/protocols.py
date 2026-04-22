@@ -4,6 +4,7 @@ from typing import Any, Protocol, runtime_checkable
 from fastrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
+    GenerationRequest,
     QueryRequest,
     RAGResponse,
     RetrievedChunk,
@@ -73,12 +74,24 @@ class PromptAssembler(Protocol):
 
 
 @runtime_checkable
+class GenerationPolicy(Protocol):
+    """Applies generation-time constraints and instructions to an assembled prompt."""
+
+    async def apply(
+        self,
+        *,
+        prompt: AssembledPrompt,
+    ) -> GenerationRequest:
+        """Return the final generation request passed into the LLM."""
+
+
+@runtime_checkable
 class LLM(Protocol):
     """Generates the final grounded response from retrieved context."""
 
     async def generate(
         self,
         *,
-        prompt: AssembledPrompt,
+        generation: GenerationRequest,
     ) -> RAGResponse:
         """Return a typed response with answer text, citations, and usage."""
