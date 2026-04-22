@@ -2,6 +2,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from enum import Enum
 
 from fastapi import FastAPI
+from starlette.requests import Request
 
 from fastrag.protocols import (
     LLM,
@@ -29,14 +30,17 @@ def build_query_decorator(
     retrieval_strategy: RetrievalStrategy,
     prompt_assembler: PromptAssembler,
     generation_policy: GenerationPolicy,
+    bind_request: Callable[[Request, QueryRequest], QueryRequest],
     resolve_request: Callable[[QueryRequest | Awaitable[QueryRequest]], Awaitable[QueryRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[QueryHandler], QueryHandler]:
     route_tags: list[str | Enum] = list(tags) if tags is not None else ["query"]
 
     def decorator(handler: QueryHandler) -> QueryHandler:
-        async def endpoint(request: QueryRequest) -> RAGResponse:
+        async def endpoint(payload: QueryRequest, http_request: Request) -> RAGResponse:
+            request = bind_request(http_request, payload)
             resolved_request = await resolve_request(handler(request))
+            resolved_request = bind_request(http_request, resolved_request)
             return await pipeline.run_query(
                 request=resolved_request,
                 embedder=embedder,
@@ -63,14 +67,17 @@ def build_ingest_decorator(
     chunker: Chunker,
     embedder: Embedder,
     vector_store: VectorStore,
+    bind_request: Callable[[Request, IngestRequest], IngestRequest],
     resolve_request: Callable[[IngestRequest | Awaitable[IngestRequest]], Awaitable[IngestRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[IngestHandler], IngestHandler]:
     route_tags: list[str | Enum] = list(tags) if tags is not None else ["ingest"]
 
     def decorator(handler: IngestHandler) -> IngestHandler:
-        async def endpoint(request: IngestRequest) -> IngestResponse:
+        async def endpoint(payload: IngestRequest, http_request: Request) -> IngestResponse:
+            request = bind_request(http_request, payload)
             resolved_request = await resolve_request(handler(request))
+            resolved_request = bind_request(http_request, resolved_request)
             return await pipeline.run_ingest(
                 request=resolved_request,
                 chunker=chunker,

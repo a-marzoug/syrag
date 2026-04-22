@@ -186,6 +186,7 @@ class FastRAG:
             retrieval_strategy=resolved_retrieval_strategy,
             prompt_assembler=resolved_prompt_assembler,
             generation_policy=resolved_generation_policy,
+            bind_request=self._bind_query_request,
             resolve_request=self._resolve_query_request,
             tags=tags,
         )
@@ -209,6 +210,7 @@ class FastRAG:
             chunker=resolved_chunker,
             embedder=resolved_embedder,
             vector_store=resolved_vector_store,
+            bind_request=self._bind_ingest_request,
             resolve_request=self._resolve_ingest_request,
             tags=tags,
         )
@@ -263,6 +265,9 @@ class FastRAG:
 
         msg = "Request context is not available for this request"
         raise RuntimeError(msg)
+
+    def get_tenant_id(self, request: Request) -> str | None:
+        return self.get_request_context(request).tenant_id
 
     def _register_exception_handlers(self) -> None:
         @self.api.exception_handler(FastRAGError)
@@ -334,6 +339,51 @@ class FastRAG:
 
         return resolved_result
 
+    def _bind_query_request(self, request: Request, payload: QueryRequest) -> QueryRequest:
+        return self._bind_request_tenant_context(request=request, payload=payload)
+
+    def _bind_ingest_request(self, request: Request, payload: IngestRequest) -> IngestRequest:
+        return self._bind_request_tenant_context(request=request, payload=payload)
+
+    def _bind_request_tenant_context[RequestModel: (QueryRequest, IngestRequest)](
+        self,
+        *,
+        request: Request,
+        payload: RequestModel,
+    ) -> RequestModel:
+        context = self.get_request_context(request)
+        tenant_id = self._resolve_request_tenant(
+            context_tenant_id=context.tenant_id,
+            payload_tenant_id=payload.tenant_id,
+        )
+        if tenant_id != context.tenant_id:
+            request.state.fastrag_context = context.model_copy(update={"tenant_id": tenant_id})
+        if tenant_id == payload.tenant_id:
+            return payload
+        return payload.model_copy(update={"tenant_id": tenant_id})
+
+    def _resolve_request_tenant(
+        self,
+        *,
+        context_tenant_id: str | None,
+        payload_tenant_id: str | None,
+    ) -> str | None:
+        if context_tenant_id is None:
+            return payload_tenant_id
+        if payload_tenant_id is None or payload_tenant_id == context_tenant_id:
+            return context_tenant_id
+
+        raise FastRAGError(
+            code="tenant_mismatch",
+            message="Request tenant does not match the scoped tenant context.",
+            stage="request",
+            status_code=400,
+            details={
+                "context_tenant_id": context_tenant_id,
+                "request_tenant_id": payload_tenant_id,
+            },
+        )
+
     def _resolve_chunker(self, chunker: Chunker | None) -> Chunker:
         if chunker is None:
             return self.chunker
@@ -378,6 +428,7 @@ class FastRAG:
 
         msg = "generation_policy must implement the GenerationPolicy protocol"
         raise TypeError(msg)
+
 
 def create_app(
     settings: Settings | None = None,

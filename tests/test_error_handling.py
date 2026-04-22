@@ -213,3 +213,40 @@ async def test_auth_hook_failures_return_stage_aware_error_response() -> None:
             "details": {"component": "FailingAuthHook"},
         }
     }
+
+
+@pytest.mark.asyncio
+async def test_tenant_mismatch_returns_structured_error_response() -> None:
+    app = create_app()
+
+    @app.query(
+        "/query",
+        embedder=PassthroughEmbedder(),
+        vector_store=PassthroughVectorStore(),
+        llm=PassthroughLLM(),
+    )
+    async def query_route(request: QueryRequest) -> QueryRequest:
+        return request
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.api),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post(
+            "/query",
+            json={"query": "What is FastRAG?", "tenant_id": "tenant-b"},
+            headers={"x-tenant-id": "tenant-a"},
+        )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "error": {
+            "code": "tenant_mismatch",
+            "message": "Request tenant does not match the scoped tenant context.",
+            "stage": "request",
+            "details": {
+                "context_tenant_id": "tenant-a",
+                "request_tenant_id": "tenant-b",
+            },
+        }
+    }

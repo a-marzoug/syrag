@@ -35,6 +35,7 @@ class QueryRequest(FastRAGSchema):
 
 class RequestContext(FastRAGSchema):
     request_id: str | None = Field(default=None)
+    tenant_id: str | None = Field(default=None)
     subject_id: str | None = Field(default=None)
     auth_scheme: str | None = Field(default=None)
     scopes: list[str] = Field(default_factory=list)

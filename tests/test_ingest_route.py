@@ -48,6 +48,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
                 "collection": "overview",
                 "metadata": {"source_id": "overview", "page_number": 1},
             },
+            headers={"x-tenant-id": "tenant-a"},
         )
         query_response = await client.post(
             "/query",
@@ -56,6 +57,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
                 "collection": "overview",
                 "top_k": 2,
             },
+            headers={"x-tenant-id": "tenant-a"},
         )
 
     assert ingest_response.status_code == 200
@@ -63,7 +65,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
         "status": "completed",
         "ingested_documents": 2,
         "collection": "overview",
-        "tenant_id": None,
+        "tenant_id": "tenant-a",
     }
     assert query_response.status_code == 200
     assert query_response.json()["citations"][0]["source_id"] == "overview-0"
