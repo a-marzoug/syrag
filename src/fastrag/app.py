@@ -1,6 +1,8 @@
+import logging
 from collections.abc import Awaitable, Callable, Sequence
 from enum import Enum
 from inspect import isawaitable
+from time import perf_counter
 from typing import Any, cast
 
 from fastapi import FastAPI
@@ -48,6 +50,7 @@ from fastrag.services import (
     PipelineService,
     RetrievalStrategy,
 )
+from fastrag.structured_logging import StructuredLogging
 from fastrag.tracing import OpenTelemetryTracer, OpenTelemetryTracing
 
 type ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
@@ -87,6 +90,7 @@ class FastRAG:
         self.prompt_assembler = DefaultPromptAssembler()
         self.request_context_hook: RequestContextHook = DefaultRequestContextHook()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.structured_logging: StructuredLogging | None = None
         self.tracing: OpenTelemetryTracing | None = None
         self.pipeline.generation_policy = self.generation_policy
         self.pipeline.prompt_assembler = self.prompt_assembler
@@ -115,6 +119,7 @@ class FastRAG:
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
+        self.api.state.structured_logging = self.structured_logging
         self.api.state.tracing = self.tracing
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
         self._register_exception_handlers()
@@ -247,6 +252,20 @@ class FastRAG:
     def add_event_listener(self, listener: EventListener) -> None:
         self.observability.add_listener(listener)
 
+    def configure_logging(
+        self,
+        *,
+        structured_logging: StructuredLogging | None = None,
+        logger: logging.Logger | None = None,
+    ) -> StructuredLogging:
+        resolved_logging = structured_logging or StructuredLogging(logger=logger)
+        if self.structured_logging is not None:
+            self.observability.remove_listener(self.structured_logging.listener)
+        self.structured_logging = resolved_logging
+        self.observability.add_listener(resolved_logging.listener)
+        self.api.state.structured_logging = resolved_logging
+        return resolved_logging
+
     def configure_tracing(
         self,
         *,
@@ -316,23 +335,42 @@ class FastRAG:
             call_next: Callable[[Request], Awaitable[Response]],
         ) -> Response:
             context = RequestContext()
+            request_started_at = perf_counter()
+            structured_logging = self.structured_logging
             tracing = self.tracing
             if tracing is None:
+                response_for_logging: Response | None = None
                 try:
-                    context = await self.request_context_hook.enrich(
-                        request=request,
-                        context=context,
-                    )
-                    context = await self.auth_hook.authenticate(request=request, context=context)
-                except FastRAGError as exc:
-                    return self._build_error_response(exc)
-                if context.request_id is None:
-                    context = context.model_copy(update={"request_id": "unknown"})
+                    try:
+                        context = await self.request_context_hook.enrich(
+                            request=request,
+                            context=context,
+                        )
+                        context = await self.auth_hook.authenticate(
+                            request=request,
+                            context=context,
+                        )
+                    except FastRAGError as exc:
+                        response_for_logging = self._build_error_response(exc)
+                        return response_for_logging
+                    if context.request_id is None:
+                        context = context.model_copy(update={"request_id": "unknown"})
 
-                request.state.fastrag_context = context
-                plain_response = await call_next(request)
-                plain_response.headers.setdefault("x-request-id", context.request_id or "unknown")
-                return plain_response
+                    request.state.fastrag_context = context
+                    response_for_logging = await call_next(request)
+                    response_for_logging.headers.setdefault(
+                        "x-request-id",
+                        context.request_id or "unknown",
+                    )
+                    return response_for_logging
+                finally:
+                    if structured_logging is not None:
+                        structured_logging.log_request(
+                            request=request,
+                            context=context,
+                            response=response_for_logging,
+                            duration_ms=(perf_counter() - request_started_at) * 1000,
+                        )
 
             with tracing.start_request_span(request=request) as request_span:
                 response: Response | None = None
@@ -361,6 +399,13 @@ class FastRAG:
                     raise
                 finally:
                     tracing.finish_request_span(span=request_span, response=response)
+                    if structured_logging is not None:
+                        structured_logging.log_request(
+                            request=request,
+                            context=context,
+                            response=response,
+                            duration_ms=(perf_counter() - request_started_at) * 1000,
+                        )
 
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])

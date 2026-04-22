@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import math
 import sqlite3
@@ -40,8 +39,7 @@ class SQLiteVectorStore(VectorStore):
         collection: str | None = None,
         tenant_id: str | None = None,
     ) -> None:
-        await asyncio.to_thread(
-            self._upsert_sync,
+        self._upsert_sync(
             chunks,
             embeddings,
             collection,
@@ -57,8 +55,7 @@ class SQLiteVectorStore(VectorStore):
         tenant_id: str | None = None,
         filters: Filters | None = None,
     ) -> list[RetrievedChunk]:
-        return await asyncio.to_thread(
-            self._query_sync,
+        return self._query_sync(
             query_embedding,
             top_k,
             collection,

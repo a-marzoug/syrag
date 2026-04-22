@@ -58,6 +58,7 @@ from fastrag.services import (
     DefaultRetrievalStrategy,
     RetrievalStrategy,
 )
+from fastrag.structured_logging import JSONLogFormatter, StructuredLogging
 from fastrag.tracing import OpenTelemetryTracing
 
 __all__ = [
@@ -89,6 +90,7 @@ __all__ = [
     "InMemoryLLM",
     "InMemoryProviderFactory",
     "InMemoryVectorStore",
+    "JSONLogFormatter",
     "LLM",
     "OpenAIEmbedder",
     "OpenAILLM",
@@ -109,6 +111,7 @@ __all__ = [
     "SourceDocument",
     "Settings",
     "SQLiteVectorStore",
+    "StructuredLogging",
     "VectorStore",
     "app",
     "create_app",
