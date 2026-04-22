@@ -48,6 +48,7 @@ from fastrag.services import (
     PipelineService,
     RetrievalStrategy,
 )
+from fastrag.tracing import OpenTelemetryTracer, OpenTelemetryTracing
 
 type ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 type ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
@@ -86,6 +87,7 @@ class FastRAG:
         self.prompt_assembler = DefaultPromptAssembler()
         self.request_context_hook: RequestContextHook = DefaultRequestContextHook()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.tracing: OpenTelemetryTracing | None = None
         self.pipeline.generation_policy = self.generation_policy
         self.pipeline.prompt_assembler = self.prompt_assembler
         self.pipeline.retrieval_strategy = self.retrieval_strategy
@@ -113,6 +115,7 @@ class FastRAG:
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
+        self.api.state.tracing = self.tracing
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
         self._register_exception_handlers()
         self._register_request_context_middleware()
@@ -244,6 +247,24 @@ class FastRAG:
     def add_event_listener(self, listener: EventListener) -> None:
         self.observability.add_listener(listener)
 
+    def configure_tracing(
+        self,
+        *,
+        tracing: OpenTelemetryTracing | None = None,
+        tracer: OpenTelemetryTracer | None = None,
+        instrumentation_scope: str = "fastrag",
+    ) -> OpenTelemetryTracing:
+        resolved_tracing = tracing or OpenTelemetryTracing(
+            tracer=tracer,
+            instrumentation_scope=instrumentation_scope,
+        )
+        if self.tracing is not None:
+            self.observability.remove_listener(self.tracing.listener)
+        self.tracing = resolved_tracing
+        self.observability.add_listener(resolved_tracing.listener)
+        self.api.state.tracing = resolved_tracing
+        return resolved_tracing
+
     def set_request_context_hook(self, hook: RequestContextHook) -> None:
         if not isinstance(hook, RequestContextHook):
             msg = "request_context_hook must implement the RequestContextHook protocol"
@@ -295,18 +316,51 @@ class FastRAG:
             call_next: Callable[[Request], Awaitable[Response]],
         ) -> Response:
             context = RequestContext()
-            try:
-                context = await self.request_context_hook.enrich(request=request, context=context)
-                context = await self.auth_hook.authenticate(request=request, context=context)
-            except FastRAGError as exc:
-                return self._build_error_response(exc)
-            if context.request_id is None:
-                context = context.model_copy(update={"request_id": "unknown"})
+            tracing = self.tracing
+            if tracing is None:
+                try:
+                    context = await self.request_context_hook.enrich(
+                        request=request,
+                        context=context,
+                    )
+                    context = await self.auth_hook.authenticate(request=request, context=context)
+                except FastRAGError as exc:
+                    return self._build_error_response(exc)
+                if context.request_id is None:
+                    context = context.model_copy(update={"request_id": "unknown"})
 
-            request.state.fastrag_context = context
-            response = await call_next(request)
-            response.headers.setdefault("x-request-id", context.request_id or "unknown")
-            return response
+                request.state.fastrag_context = context
+                plain_response = await call_next(request)
+                plain_response.headers.setdefault("x-request-id", context.request_id or "unknown")
+                return plain_response
+
+            with tracing.start_request_span(request=request) as request_span:
+                response: Response | None = None
+                try:
+                    context = await self.request_context_hook.enrich(
+                        request=request,
+                        context=context,
+                    )
+                    context = await self.auth_hook.authenticate(request=request, context=context)
+                    if context.request_id is None:
+                        context = context.model_copy(update={"request_id": "unknown"})
+                    request.state.fastrag_context = context
+                    tracing.enrich_request_span(span=request_span, context=context)
+                    response = await call_next(request)
+                    response.headers.setdefault("x-request-id", context.request_id or "unknown")
+                    return response
+                except FastRAGError as exc:
+                    tracing.enrich_request_span(span=request_span, context=context)
+                    tracing.record_exception(span=request_span, exception=exc)
+                    response = self._build_error_response(exc)
+                    response.headers.setdefault("x-request-id", context.request_id or "unknown")
+                    return response
+                except Exception as exc:
+                    tracing.enrich_request_span(span=request_span, context=context)
+                    tracing.record_exception(span=request_span, exception=exc)
+                    raise
+                finally:
+                    tracing.finish_request_span(span=request_span, response=response)
 
     def _register_system_routes(self) -> None:
         @self.api.get("/health", tags=["system"])

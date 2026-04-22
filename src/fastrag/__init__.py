@@ -58,6 +58,7 @@ from fastrag.services import (
     DefaultRetrievalStrategy,
     RetrievalStrategy,
 )
+from fastrag.tracing import OpenTelemetryTracing
 
 __all__ = [
     "ComponentAlreadyRegisteredError",
@@ -91,6 +92,7 @@ __all__ = [
     "LLM",
     "OpenAIEmbedder",
     "OpenAILLM",
+    "OpenTelemetryTracing",
     "NoOpAuthHook",
     "PassThroughChunker",
     "PromptAssembler",

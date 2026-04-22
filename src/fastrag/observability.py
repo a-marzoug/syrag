@@ -26,6 +26,12 @@ class ObservabilityHub:
     def add_listener(self, listener: EventListener) -> None:
         self._listeners.append(listener)
 
+    def remove_listener(self, listener: EventListener) -> None:
+        try:
+            self._listeners.remove(listener)
+        except ValueError:
+            return
+
     def emit(self, event: PipelineEvent) -> None:
         for listener in self._listeners:
             try:
