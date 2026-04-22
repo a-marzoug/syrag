@@ -11,7 +11,9 @@ from fastrag.protocols import (
     EmbeddingVector,
     GenerationPolicy,
     PromptAssembler,
+    RateLimiter,
     RequestContextHook,
+    SafetyGuard,
     VectorStore,
 )
 from fastrag.schemas import (
@@ -19,6 +21,7 @@ from fastrag.schemas import (
     Citation,
     DocumentChunk,
     GenerationRequest,
+    IngestRequest,
     QueryRequest,
     RAGResponse,
     RequestContext,
@@ -126,6 +129,38 @@ class ExampleLLM:
         )
 
 
+class ExampleRateLimiter:
+    async def check(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> None:
+        del request, context
+
+
+class ExampleSafetyGuard:
+    async def validate_query(
+        self,
+        *,
+        request: Request,
+        payload: QueryRequest,
+        context: RequestContext,
+    ) -> QueryRequest:
+        del request, context
+        return payload
+
+    async def validate_ingest(
+        self,
+        *,
+        request: Request,
+        payload: IngestRequest,
+        context: RequestContext,
+    ) -> IngestRequest:
+        del request, context
+        return payload
+
+
 class ExamplePromptAssembler:
     async def assemble(
         self,
@@ -183,6 +218,8 @@ def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleRequestContextHook(), RequestContextHook)
     assert isinstance(ExampleAuthHook(), AuthHook)
     assert isinstance(ExampleLLM(), LLM)
+    assert isinstance(ExampleRateLimiter(), RateLimiter)
+    assert isinstance(ExampleSafetyGuard(), SafetyGuard)
     assert isinstance(ExampleGenerationPolicy(), GenerationPolicy)
     assert isinstance(ExamplePromptAssembler(), PromptAssembler)
     assert isinstance(ExampleRetrievalStrategy(), RetrievalStrategy)

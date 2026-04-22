@@ -30,7 +30,7 @@ def build_query_decorator(
     retrieval_strategy: RetrievalStrategy,
     prompt_assembler: PromptAssembler,
     generation_policy: GenerationPolicy,
-    bind_request: Callable[[Request, QueryRequest], QueryRequest],
+    prepare_request: Callable[[Request, QueryRequest], Awaitable[QueryRequest]],
     resolve_request: Callable[[QueryRequest | Awaitable[QueryRequest]], Awaitable[QueryRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[QueryHandler], QueryHandler]:
@@ -38,9 +38,9 @@ def build_query_decorator(
 
     def decorator(handler: QueryHandler) -> QueryHandler:
         async def endpoint(payload: QueryRequest, http_request: Request) -> RAGResponse:
-            request = bind_request(http_request, payload)
+            request = await prepare_request(http_request, payload)
             resolved_request = await resolve_request(handler(request))
-            resolved_request = bind_request(http_request, resolved_request)
+            resolved_request = await prepare_request(http_request, resolved_request)
             return await pipeline.run_query(
                 request=resolved_request,
                 embedder=embedder,
@@ -67,7 +67,7 @@ def build_ingest_decorator(
     chunker: Chunker,
     embedder: Embedder,
     vector_store: VectorStore,
-    bind_request: Callable[[Request, IngestRequest], IngestRequest],
+    prepare_request: Callable[[Request, IngestRequest], Awaitable[IngestRequest]],
     resolve_request: Callable[[IngestRequest | Awaitable[IngestRequest]], Awaitable[IngestRequest]],
     tags: Sequence[str | Enum] | None = None,
 ) -> Callable[[IngestHandler], IngestHandler]:
@@ -75,9 +75,9 @@ def build_ingest_decorator(
 
     def decorator(handler: IngestHandler) -> IngestHandler:
         async def endpoint(payload: IngestRequest, http_request: Request) -> IngestResponse:
-            request = bind_request(http_request, payload)
+            request = await prepare_request(http_request, payload)
             resolved_request = await resolve_request(handler(request))
-            resolved_request = bind_request(http_request, resolved_request)
+            resolved_request = await prepare_request(http_request, resolved_request)
             return await pipeline.run_ingest(
                 request=resolved_request,
                 chunker=chunker,

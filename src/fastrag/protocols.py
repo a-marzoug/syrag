@@ -7,6 +7,7 @@ from fastrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
     GenerationRequest,
+    IngestRequest,
     QueryRequest,
     RAGResponse,
     RequestContext,
@@ -87,6 +88,42 @@ class AuthHook(Protocol):
         context: RequestContext,
     ) -> RequestContext:
         """Return the request context after authentication is applied."""
+
+
+@runtime_checkable
+class RateLimiter(Protocol):
+    """Applies request-level throttling before route handlers execute."""
+
+    async def check(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> None:
+        """Raise when the incoming request exceeds the configured rate limit."""
+
+
+@runtime_checkable
+class SafetyGuard(Protocol):
+    """Validates request payloads before they reach pipeline execution."""
+
+    async def validate_query(
+        self,
+        *,
+        request: Request,
+        payload: QueryRequest,
+        context: RequestContext,
+    ) -> QueryRequest:
+        """Return a validated query payload or raise when it is unsafe."""
+
+    async def validate_ingest(
+        self,
+        *,
+        request: Request,
+        payload: IngestRequest,
+        context: RequestContext,
+    ) -> IngestRequest:
+        """Return a validated ingest payload or raise when it is unsafe."""
 
 
 @runtime_checkable

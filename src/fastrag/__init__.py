@@ -9,6 +9,7 @@ from fastrag.config import (
     get_settings,
 )
 from fastrag.dependencies import ComponentResolver
+from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
 from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
 from fastrag.protocols import (
     LLM,
@@ -17,7 +18,9 @@ from fastrag.protocols import (
     Embedder,
     GenerationPolicy,
     PromptAssembler,
+    RateLimiter,
     RequestContextHook,
+    SafetyGuard,
     VectorStore,
 )
 from fastrag.providers import (
@@ -75,6 +78,7 @@ __all__ = [
     "Citation",
     "Chunker",
     "DefaultRequestContextHook",
+    "DefaultSafetyGuard",
     "DefaultGenerationPolicy",
     "DefaultPromptAssembler",
     "DocumentChunk",
@@ -96,12 +100,14 @@ __all__ = [
     "OpenAILLM",
     "OpenTelemetryTracing",
     "NoOpAuthHook",
+    "InMemoryRateLimiter",
     "PassThroughChunker",
     "PromptAssembler",
     "ProviderSettings",
     "ProviderFactory",
     "QueryRequest",
     "RAGResponse",
+    "RateLimiter",
     "RequestContext",
     "RequestContextHook",
     "RegistryError",
@@ -112,6 +118,7 @@ __all__ = [
     "Settings",
     "SQLiteVectorStore",
     "StructuredLogging",
+    "SafetyGuard",
     "VectorStore",
     "app",
     "create_app",

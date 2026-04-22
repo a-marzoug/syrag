@@ -16,6 +16,7 @@ from fastrag.bootstrap import BootstrapService
 from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
 from fastrag.errors import FastRAGError
+from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
 from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
 from fastrag.observability import EventListener, ObservabilityHub
 from fastrag.protocols import (
@@ -25,7 +26,9 @@ from fastrag.protocols import (
     Embedder,
     GenerationPolicy,
     PromptAssembler,
+    RateLimiter,
     RequestContextHook,
+    SafetyGuard,
     VectorStore,
 )
 from fastrag.providers import PassThroughChunker, ProviderFactory
@@ -88,8 +91,10 @@ class FastRAG:
         self.chunker = PassThroughChunker()
         self.generation_policy = DefaultGenerationPolicy()
         self.prompt_assembler = DefaultPromptAssembler()
+        self.rate_limiter: RateLimiter | None = None
         self.request_context_hook: RequestContextHook = DefaultRequestContextHook()
         self.retrieval_strategy = DefaultRetrievalStrategy(observability=self.observability)
+        self.safety_guard: SafetyGuard = DefaultSafetyGuard()
         self.structured_logging: StructuredLogging | None = None
         self.tracing: OpenTelemetryTracing | None = None
         self.pipeline.generation_policy = self.generation_policy
@@ -115,10 +120,12 @@ class FastRAG:
         self.api.state.chunker = self.chunker
         self.api.state.generation_policy = self.generation_policy
         self.api.state.prompt_assembler = self.prompt_assembler
+        self.api.state.rate_limiter = self.rate_limiter
         self.api.state.request_context_hook = self.request_context_hook
         self.api.state.retrieval_strategy = self.retrieval_strategy
         self.api.state.registry = self.registry
         self.api.state.resolver = self.resolver
+        self.api.state.safety_guard = self.safety_guard
         self.api.state.structured_logging = self.structured_logging
         self.api.state.tracing = self.tracing
         self.bootstrap.apply(registry=self.registry, defaults=self.defaults)
@@ -194,7 +201,7 @@ class FastRAG:
             retrieval_strategy=resolved_retrieval_strategy,
             prompt_assembler=resolved_prompt_assembler,
             generation_policy=resolved_generation_policy,
-            bind_request=self._bind_query_request,
+            prepare_request=self._prepare_query_request,
             resolve_request=self._resolve_query_request,
             tags=tags,
         )
@@ -218,7 +225,7 @@ class FastRAG:
             chunker=resolved_chunker,
             embedder=resolved_embedder,
             vector_store=resolved_vector_store,
-            bind_request=self._bind_ingest_request,
+            prepare_request=self._prepare_ingest_request,
             resolve_request=self._resolve_ingest_request,
             tags=tags,
         )
@@ -284,6 +291,21 @@ class FastRAG:
         self.api.state.tracing = resolved_tracing
         return resolved_tracing
 
+    def configure_rate_limiting(
+        self,
+        *,
+        max_requests: int,
+        window_seconds: float = 60.0,
+        include_path: bool = True,
+    ) -> InMemoryRateLimiter:
+        rate_limiter = InMemoryRateLimiter(
+            max_requests=max_requests,
+            window_seconds=window_seconds,
+            include_path=include_path,
+        )
+        self.set_rate_limiter(rate_limiter)
+        return rate_limiter
+
     def set_request_context_hook(self, hook: RequestContextHook) -> None:
         if not isinstance(hook, RequestContextHook):
             msg = "request_context_hook must implement the RequestContextHook protocol"
@@ -297,6 +319,20 @@ class FastRAG:
             raise TypeError(msg)
         self.auth_hook = hook
         self.api.state.auth_hook = hook
+
+    def set_rate_limiter(self, rate_limiter: RateLimiter | None) -> None:
+        if rate_limiter is not None and not isinstance(rate_limiter, RateLimiter):
+            msg = "rate_limiter must implement the RateLimiter protocol"
+            raise TypeError(msg)
+        self.rate_limiter = rate_limiter
+        self.api.state.rate_limiter = rate_limiter
+
+    def set_safety_guard(self, safety_guard: SafetyGuard) -> None:
+        if not isinstance(safety_guard, SafetyGuard):
+            msg = "safety_guard must implement the SafetyGuard protocol"
+            raise TypeError(msg)
+        self.safety_guard = safety_guard
+        self.api.state.safety_guard = safety_guard
 
     def get_request_context(self, request: Request) -> RequestContext:
         context = getattr(request.state, "fastrag_context", None)
@@ -326,7 +362,11 @@ class FastRAG:
                 details=exc.details,
             )
         )
-        return JSONResponse(status_code=exc.status_code, content=response.model_dump())
+        http_response = JSONResponse(status_code=exc.status_code, content=response.model_dump())
+        retry_after_seconds = exc.details.get("retry_after_seconds")
+        if retry_after_seconds is not None:
+            http_response.headers.setdefault("retry-after", str(retry_after_seconds))
+        return http_response
 
     def _register_request_context_middleware(self) -> None:
         @self.api.middleware("http")
@@ -342,26 +382,20 @@ class FastRAG:
                 response_for_logging: Response | None = None
                 try:
                     try:
-                        context = await self.request_context_hook.enrich(
+                        context = await self._build_request_context(
                             request=request,
                             context=context,
                         )
-                        context = await self.auth_hook.authenticate(
-                            request=request,
-                            context=context,
-                        )
+                        await self._enforce_rate_limit(request=request, context=context)
                     except FastRAGError as exc:
                         response_for_logging = self._build_error_response(exc)
+                        self._apply_request_headers(
+                            response=response_for_logging,
+                            context=context,
+                        )
                         return response_for_logging
-                    if context.request_id is None:
-                        context = context.model_copy(update={"request_id": "unknown"})
-
-                    request.state.fastrag_context = context
                     response_for_logging = await call_next(request)
-                    response_for_logging.headers.setdefault(
-                        "x-request-id",
-                        context.request_id or "unknown",
-                    )
+                    self._apply_request_headers(response=response_for_logging, context=context)
                     return response_for_logging
                 finally:
                     if structured_logging is not None:
@@ -375,23 +409,17 @@ class FastRAG:
             with tracing.start_request_span(request=request) as request_span:
                 response: Response | None = None
                 try:
-                    context = await self.request_context_hook.enrich(
-                        request=request,
-                        context=context,
-                    )
-                    context = await self.auth_hook.authenticate(request=request, context=context)
-                    if context.request_id is None:
-                        context = context.model_copy(update={"request_id": "unknown"})
-                    request.state.fastrag_context = context
+                    context = await self._build_request_context(request=request, context=context)
+                    await self._enforce_rate_limit(request=request, context=context)
                     tracing.enrich_request_span(span=request_span, context=context)
                     response = await call_next(request)
-                    response.headers.setdefault("x-request-id", context.request_id or "unknown")
+                    self._apply_request_headers(response=response, context=context)
                     return response
                 except FastRAGError as exc:
                     tracing.enrich_request_span(span=request_span, context=context)
                     tracing.record_exception(span=request_span, exception=exc)
                     response = self._build_error_response(exc)
-                    response.headers.setdefault("x-request-id", context.request_id or "unknown")
+                    self._apply_request_headers(response=response, context=context)
                     return response
                 except Exception as exc:
                     tracing.enrich_request_span(span=request_span, context=context)
@@ -438,11 +466,31 @@ class FastRAG:
 
         return resolved_result
 
-    def _bind_query_request(self, request: Request, payload: QueryRequest) -> QueryRequest:
-        return self._bind_request_tenant_context(request=request, payload=payload)
+    async def _prepare_query_request(
+        self,
+        request: Request,
+        payload: QueryRequest,
+    ) -> QueryRequest:
+        bound_request = self._bind_request_tenant_context(request=request, payload=payload)
+        context = self.get_request_context(request)
+        return await self.safety_guard.validate_query(
+            request=request,
+            payload=bound_request,
+            context=context,
+        )
 
-    def _bind_ingest_request(self, request: Request, payload: IngestRequest) -> IngestRequest:
-        return self._bind_request_tenant_context(request=request, payload=payload)
+    async def _prepare_ingest_request(
+        self,
+        request: Request,
+        payload: IngestRequest,
+    ) -> IngestRequest:
+        bound_request = self._bind_request_tenant_context(request=request, payload=payload)
+        context = self.get_request_context(request)
+        return await self.safety_guard.validate_ingest(
+            request=request,
+            payload=bound_request,
+            context=context,
+        )
 
     def _bind_request_tenant_context[RequestModel: (QueryRequest, IngestRequest)](
         self,
@@ -527,6 +575,43 @@ class FastRAG:
 
         msg = "generation_policy must implement the GenerationPolicy protocol"
         raise TypeError(msg)
+
+    async def _build_request_context(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> RequestContext:
+        resolved_context = await self.request_context_hook.enrich(
+            request=request,
+            context=context,
+        )
+        resolved_context = await self.auth_hook.authenticate(
+            request=request,
+            context=resolved_context,
+        )
+        if resolved_context.request_id is None:
+            resolved_context = resolved_context.model_copy(update={"request_id": "unknown"})
+        request.state.fastrag_context = resolved_context
+        return resolved_context
+
+    async def _enforce_rate_limit(
+        self,
+        *,
+        request: Request,
+        context: RequestContext,
+    ) -> None:
+        if self.rate_limiter is None:
+            return
+        await self.rate_limiter.check(request=request, context=context)
+
+    def _apply_request_headers(
+        self,
+        *,
+        response: Response,
+        context: RequestContext,
+    ) -> None:
+        response.headers.setdefault("x-request-id", context.request_id or "unknown")
 
 
 def create_app(
