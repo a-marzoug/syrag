@@ -25,8 +25,11 @@ from fastrag.providers import (
     InMemoryLLM,
     InMemoryProviderFactory,
     InMemoryVectorStore,
+    OpenAIEmbedder,
+    OpenAILLM,
     PassThroughChunker,
     ProviderFactory,
+    SQLiteVectorStore,
 )
 from fastrag.registry import (
     ComponentAlreadyRegisteredError,
@@ -86,6 +89,8 @@ __all__ = [
     "InMemoryProviderFactory",
     "InMemoryVectorStore",
     "LLM",
+    "OpenAIEmbedder",
+    "OpenAILLM",
     "NoOpAuthHook",
     "PassThroughChunker",
     "PromptAssembler",
@@ -101,6 +106,7 @@ __all__ = [
     "RetrievedDocument",
     "SourceDocument",
     "Settings",
+    "SQLiteVectorStore",
     "VectorStore",
     "app",
     "create_app",

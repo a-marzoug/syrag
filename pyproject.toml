@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "fastapi>=0.136.0",
+    "httpx>=0.28.1",
     "pydantic-settings>=2.13.1",
     "uvicorn[standard]>=0.44.0",
 ]
@@ -19,7 +20,6 @@ fastrag = "fastrag.main:run"
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
     "mypy>=1.20.1",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
