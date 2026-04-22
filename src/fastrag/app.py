@@ -49,8 +49,8 @@ from fastrag.services import (
     RetrievalStrategy,
 )
 
-ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
-ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
+type ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
+type ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
 
 
 class FastRAG:
