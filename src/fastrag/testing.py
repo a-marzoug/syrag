@@ -5,7 +5,16 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+
+from fastrag._optional import missing_optional_dependency
+
+try:
+    from httpx import ASGITransport, AsyncClient
+except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
+    raise missing_optional_dependency(
+        feature="fastrag.testing",
+        extra="testing",
+    ) from exc
 
 from fastrag.app import FastRAG, create_app
 from fastrag.config import ComponentDefaults, Settings

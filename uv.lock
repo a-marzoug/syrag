@@ -84,35 +84,56 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
-    { name = "httpx" },
     { name = "opentelemetry-api" },
     { name = "pydantic-settings" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "httpx" },
     { name = "uvicorn", extra = ["standard"] },
+]
+openai = [
+    { name = "httpx" },
+]
+server = [
+    { name = "uvicorn", extra = ["standard"] },
+]
+testing = [
+    { name = "httpx" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.136.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "httpx", marker = "extra == 'all'", specifier = ">=0.28.1" },
+    { name = "httpx", marker = "extra == 'openai'", specifier = ">=0.28.1" },
+    { name = "httpx", marker = "extra == 'testing'", specifier = ">=0.28.1" },
     { name = "opentelemetry-api", specifier = ">=1.0.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.44.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'all'", specifier = ">=0.44.0" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.44.0" },
 ]
+provides-extras = ["openai", "server", "testing", "all"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "mypy", specifier = ">=1.20.1" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
     { name = "ruff", specifier = ">=0.15.11" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.44.0" },
 ]
 
 [[package]]

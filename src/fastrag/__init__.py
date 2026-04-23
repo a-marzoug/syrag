@@ -41,8 +41,6 @@ from fastrag.providers import (
     InMemoryLLM,
     InMemoryProviderFactory,
     InMemoryVectorStore,
-    OpenAIEmbedder,
-    OpenAILLM,
     PassThroughChunker,
     ProviderFactory,
     SQLiteVectorStore,
@@ -75,20 +73,6 @@ from fastrag.services import (
     RetrievalStrategy,
 )
 from fastrag.structured_logging import JSONLogFormatter, StructuredLogging
-from fastrag.testing import (
-    EmbedCall,
-    FakeChunker,
-    FakeEmbedder,
-    FakeLLM,
-    FakeProviderBundle,
-    FakeVectorStore,
-    GenerateCall,
-    QueryCall,
-    UpsertCall,
-    create_test_app,
-    create_test_client,
-    seed_documents,
-)
 from fastrag.tracing import OpenTelemetryTracing
 
 __all__ = [
@@ -113,17 +97,10 @@ __all__ = [
     "DocumentChunk",
     "DefaultRetrievalStrategy",
     "Embedder",
-    "EmbedCall",
-    "FakeProviderBundle",
     "FastRAGError",
     "FastRAG",
-    "FakeChunker",
-    "FakeEmbedder",
-    "FakeLLM",
-    "FakeVectorStore",
     "GenerationPolicy",
     "GenerationRequest",
-    "GenerateCall",
     "InMemoryProviderSettings",
     "IngestRequest",
     "IngestResponse",
@@ -133,8 +110,6 @@ __all__ = [
     "InMemoryVectorStore",
     "JSONLogFormatter",
     "LLM",
-    "OpenAIEmbedder",
-    "OpenAILLM",
     "OpenTelemetryTracing",
     "NoOpAuthHook",
     "InMemoryRateLimiter",
@@ -148,7 +123,6 @@ __all__ = [
     "PipelineRuntimeError",
     "PipelineStageError",
     "QueryRequest",
-    "QueryCall",
     "RAGResponse",
     "RateLimiter",
     "RateLimitExceededError",
@@ -165,12 +139,72 @@ __all__ = [
     "SQLiteVectorStore",
     "StructuredLogging",
     "SafetyGuard",
-    "UpsertCall",
     "VectorStore",
     "app",
     "create_app",
-    "create_test_app",
-    "create_test_client",
     "get_settings",
-    "seed_documents",
 ]
+
+try:
+    from fastrag.providers.openai import OpenAIEmbedder, OpenAILLM
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update(
+        {
+            "OpenAIEmbedder": OpenAIEmbedder,
+            "OpenAILLM": OpenAILLM,
+        }
+    )
+    __all__.extend(["OpenAIEmbedder", "OpenAILLM"])
+
+try:
+    from fastrag.testing import (
+        EmbedCall,
+        FakeChunker,
+        FakeEmbedder,
+        FakeLLM,
+        FakeProviderBundle,
+        FakeVectorStore,
+        GenerateCall,
+        QueryCall,
+        UpsertCall,
+        create_test_app,
+        create_test_client,
+        seed_documents,
+    )
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update(
+        {
+            "EmbedCall": EmbedCall,
+            "FakeChunker": FakeChunker,
+            "FakeEmbedder": FakeEmbedder,
+            "FakeLLM": FakeLLM,
+            "FakeProviderBundle": FakeProviderBundle,
+            "FakeVectorStore": FakeVectorStore,
+            "GenerateCall": GenerateCall,
+            "QueryCall": QueryCall,
+            "UpsertCall": UpsertCall,
+            "create_test_app": create_test_app,
+            "create_test_client": create_test_client,
+            "seed_documents": seed_documents,
+        }
+    )
+    __all__.extend(
+        [
+            "EmbedCall",
+            "FakeChunker",
+            "FakeEmbedder",
+            "FakeLLM",
+            "FakeProviderBundle",
+            "FakeVectorStore",
+            "GenerateCall",
+            "QueryCall",
+            "UpsertCall",
+            "create_test_app",
+            "create_test_client",
+            "seed_documents",
+        ]
+    )

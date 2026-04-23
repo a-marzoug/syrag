@@ -3,7 +3,15 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-import httpx
+from fastrag._optional import missing_optional_dependency
+
+try:
+    import httpx
+except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
+    raise missing_optional_dependency(
+        feature="fastrag.providers.openai",
+        extra="openai",
+    ) from exc
 
 from fastrag.errors import ProviderRequestError, ProviderResponseError
 from fastrag.protocols import LLM, Embedder
