@@ -75,6 +75,20 @@ from fastrag.services import (
     RetrievalStrategy,
 )
 from fastrag.structured_logging import JSONLogFormatter, StructuredLogging
+from fastrag.testing import (
+    EmbedCall,
+    FakeChunker,
+    FakeEmbedder,
+    FakeLLM,
+    FakeProviderBundle,
+    FakeVectorStore,
+    GenerateCall,
+    QueryCall,
+    UpsertCall,
+    create_test_app,
+    create_test_client,
+    seed_documents,
+)
 from fastrag.tracing import OpenTelemetryTracing
 
 __all__ = [
@@ -99,10 +113,17 @@ __all__ = [
     "DocumentChunk",
     "DefaultRetrievalStrategy",
     "Embedder",
+    "EmbedCall",
+    "FakeProviderBundle",
     "FastRAGError",
     "FastRAG",
+    "FakeChunker",
+    "FakeEmbedder",
+    "FakeLLM",
+    "FakeVectorStore",
     "GenerationPolicy",
     "GenerationRequest",
+    "GenerateCall",
     "InMemoryProviderSettings",
     "IngestRequest",
     "IngestResponse",
@@ -127,6 +148,7 @@ __all__ = [
     "PipelineRuntimeError",
     "PipelineStageError",
     "QueryRequest",
+    "QueryCall",
     "RAGResponse",
     "RateLimiter",
     "RateLimitExceededError",
@@ -143,8 +165,12 @@ __all__ = [
     "SQLiteVectorStore",
     "StructuredLogging",
     "SafetyGuard",
+    "UpsertCall",
     "VectorStore",
     "app",
     "create_app",
+    "create_test_app",
+    "create_test_client",
     "get_settings",
+    "seed_documents",
 ]
