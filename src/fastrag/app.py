@@ -436,7 +436,30 @@ class FastRAG:
                         )
 
     def _register_system_routes(self) -> None:
-        @self.api.get("/health", tags=["system"])
+        @self.api.get(
+            "/health",
+            tags=["system"],
+            summary="Health check",
+            description="Return basic service metadata for liveness and readiness checks.",
+            responses={
+                200: {
+                    "description": "Service metadata for health probes.",
+                    "content": {
+                        "application/json": {
+                            "examples": {
+                                "healthy": {
+                                    "value": {
+                                        "status": "ok",
+                                        "environment": "development",
+                                        "service": "FastRAG",
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+            },
+        )
         async def healthcheck() -> dict[str, str]:
             return {
                 "status": "ok",
