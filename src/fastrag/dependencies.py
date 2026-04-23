@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastrag.config import ComponentDefaults
+from fastrag.errors import DependencyConfigurationError
 from fastrag.protocols import LLM, Embedder, VectorStore
 from fastrag.registry import ComponentRegistry
 
@@ -69,8 +70,11 @@ class ComponentResolver:
         if configured_name is not None:
             return configured_name
 
-        msg = f"No default {component_name} configured for this app"
-        raise ValueError(msg)
+        raise DependencyConfigurationError(
+            code="missing_default_component",
+            message=f"No default {component_name} configured for this app",
+            details={"component": component_name},
+        )
 
     @staticmethod
     def _validate_component(

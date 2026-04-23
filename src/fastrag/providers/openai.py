@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from fastrag.errors import ProviderRequestError, ProviderResponseError
 from fastrag.protocols import LLM, Embedder
 from fastrag.schemas import Citation, GenerationRequest, RAGResponse, RetrievedChunk
 
@@ -51,8 +52,11 @@ class OpenAIEmbedder(Embedder):
             key=lambda item: int(item.get("index", 0)),
         )
         if len(raw_embeddings) != len(texts):
-            msg = "OpenAI embeddings response did not return one vector per input text"
-            raise RuntimeError(msg)
+            raise ProviderResponseError(
+                code="provider_invalid_response",
+                message="OpenAI embeddings response did not return one vector per input text",
+                details={"provider": "openai", "operation": "embeddings"},
+            )
 
         return [
             [float(value) for value in embedding["embedding"]]
@@ -75,8 +79,15 @@ class OpenAIEmbedder(Embedder):
             try:
                 response.raise_for_status()
             except httpx.HTTPError as exc:
-                msg = f"OpenAI embeddings request failed with status {response.status_code}"
-                raise RuntimeError(msg) from exc
+                raise ProviderRequestError(
+                    code="provider_request_failed",
+                    message=f"OpenAI embeddings request failed with status {response.status_code}",
+                    details={
+                        "provider": "openai",
+                        "operation": "embeddings",
+                        "status_code": response.status_code,
+                    },
+                ) from exc
             return dict(response.json())
 
     def _headers(self) -> dict[str, str]:
@@ -175,8 +186,15 @@ class OpenAILLM(LLM):
             try:
                 response.raise_for_status()
             except httpx.HTTPError as exc:
-                msg = f"OpenAI responses request failed with status {response.status_code}"
-                raise RuntimeError(msg) from exc
+                raise ProviderRequestError(
+                    code="provider_request_failed",
+                    message=f"OpenAI responses request failed with status {response.status_code}",
+                    details={
+                        "provider": "openai",
+                        "operation": "responses",
+                        "status_code": response.status_code,
+                    },
+                ) from exc
             return dict(response.json())
 
     def _headers(self) -> dict[str, str]:
@@ -196,8 +214,11 @@ class OpenAILLM(LLM):
 
         output = response_json.get("output")
         if not isinstance(output, list):
-            msg = "OpenAI responses output did not contain text output"
-            raise RuntimeError(msg)
+            raise ProviderResponseError(
+                code="provider_invalid_response",
+                message="OpenAI responses output did not contain text output",
+                details={"provider": "openai", "operation": "responses"},
+            )
 
         fragments: list[str] = []
         for item in output:
@@ -216,8 +237,11 @@ class OpenAILLM(LLM):
                     fragments.append(str(content_item["text"]))
 
         if not fragments:
-            msg = "OpenAI responses output did not contain text output"
-            raise RuntimeError(msg)
+            raise ProviderResponseError(
+                code="provider_invalid_response",
+                message="OpenAI responses output did not contain text output",
+                details={"provider": "openai", "operation": "responses"},
+            )
         return "\n".join(fragments)
 
     def _citations_for(

@@ -15,7 +15,7 @@ from starlette.types import Receive, Scope, Send
 from fastrag.bootstrap import BootstrapService
 from fastrag.config import ComponentDefaults, Settings, get_settings
 from fastrag.dependencies import ComponentResolver
-from fastrag.errors import FastRAGError
+from fastrag.errors import FastRAGError, RequestValidationError
 from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
 from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
 from fastrag.observability import EventListener, ObservabilityHub
@@ -520,11 +520,9 @@ class FastRAG:
         if payload_tenant_id is None or payload_tenant_id == context_tenant_id:
             return context_tenant_id
 
-        raise FastRAGError(
+        raise RequestValidationError(
             code="tenant_mismatch",
             message="Request tenant does not match the scoped tenant context.",
-            stage="request",
-            status_code=400,
             details={
                 "context_tenant_id": context_tenant_id,
                 "request_tenant_id": payload_tenant_id,

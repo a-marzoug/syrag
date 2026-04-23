@@ -8,7 +8,7 @@ from time import monotonic
 
 from starlette.requests import Request
 
-from fastrag.errors import FastRAGError
+from fastrag.errors import RateLimitExceededError, SafetyGuardError
 from fastrag.schemas import IngestRequest, QueryRequest, RequestContext
 
 
@@ -54,11 +54,9 @@ class InMemoryRateLimiter:
 
             if len(bucket) >= self.max_requests:
                 retry_after_seconds = max(1, ceil(bucket[0] + self.window_seconds - now))
-                raise FastRAGError(
+                raise RateLimitExceededError(
                     code="rate_limited",
                     message="Request rate limit exceeded.",
-                    stage="rate_limit",
-                    status_code=429,
                     details={
                         "max_requests": self.max_requests,
                         "window_seconds": self.window_seconds,
@@ -119,11 +117,9 @@ class DefaultSafetyGuard:
 
         query_length = len(payload.query)
         if query_length > self.max_query_characters:
-            raise FastRAGError(
+            raise SafetyGuardError(
                 code="query_too_large",
                 message="Query exceeds the configured safety limit.",
-                stage="safety",
-                status_code=400,
                 details={
                     "max_query_characters": self.max_query_characters,
                     "actual_query_characters": query_length,
@@ -132,11 +128,9 @@ class DefaultSafetyGuard:
 
         filter_count = len(payload.filters)
         if filter_count > self.max_query_filters:
-            raise FastRAGError(
+            raise SafetyGuardError(
                 code="too_many_filters",
                 message="Query filters exceed the configured safety limit.",
-                stage="safety",
-                status_code=400,
                 details={
                     "max_query_filters": self.max_query_filters,
                     "actual_query_filters": filter_count,
@@ -156,11 +150,9 @@ class DefaultSafetyGuard:
 
         document_count = len(payload.documents)
         if document_count > self.max_ingest_documents:
-            raise FastRAGError(
+            raise SafetyGuardError(
                 code="too_many_documents",
                 message="Ingest request exceeds the configured document safety limit.",
-                stage="safety",
-                status_code=400,
                 details={
                     "max_ingest_documents": self.max_ingest_documents,
                     "actual_ingest_documents": document_count,
@@ -169,11 +161,9 @@ class DefaultSafetyGuard:
 
         metadata_entries = len(payload.metadata)
         if metadata_entries > self.max_ingest_metadata_entries:
-            raise FastRAGError(
+            raise SafetyGuardError(
                 code="metadata_too_large",
                 message="Ingest metadata exceeds the configured safety limit.",
-                stage="safety",
-                status_code=400,
                 details={
                     "max_ingest_metadata_entries": self.max_ingest_metadata_entries,
                     "actual_ingest_metadata_entries": metadata_entries,
@@ -184,11 +174,9 @@ class DefaultSafetyGuard:
         for index, document in enumerate(payload.documents):
             document_length = len(document)
             if document_length > self.max_document_characters:
-                raise FastRAGError(
+                raise SafetyGuardError(
                     code="document_too_large",
                     message="An ingest document exceeds the configured safety limit.",
-                    stage="safety",
-                    status_code=400,
                     details={
                         "document_index": index,
                         "max_document_characters": self.max_document_characters,
@@ -198,11 +186,9 @@ class DefaultSafetyGuard:
             total_characters += document_length
 
         if total_characters > self.max_total_ingest_characters:
-            raise FastRAGError(
+            raise SafetyGuardError(
                 code="ingest_too_large",
                 message="Ingest payload exceeds the configured total safety limit.",
-                stage="safety",
-                status_code=400,
                 details={
                     "max_total_ingest_characters": self.max_total_ingest_characters,
                     "actual_total_ingest_characters": total_characters,

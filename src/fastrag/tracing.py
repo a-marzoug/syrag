@@ -116,6 +116,7 @@ class OpenTelemetryTracing:
         span.set_status(Status(StatusCode.ERROR))
         if isinstance(exception, FastRAGError):
             span.set_attribute("fastrag.error.code", exception.code)
+            span.set_attribute("fastrag.error.category", exception.error_category)
             span.set_attribute("fastrag.error.stage", exception.stage)
 
     def _set_attribute(

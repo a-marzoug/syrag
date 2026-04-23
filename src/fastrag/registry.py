@@ -2,11 +2,20 @@ from __future__ import annotations
 
 from typing import Final
 
+from fastrag.errors import ConfigurationError
 from fastrag.protocols import LLM, Embedder, VectorStore
 
 
-class RegistryError(Exception):
+class RegistryError(ConfigurationError):
     """Base exception for component registry failures."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "registry_error",
+    ) -> None:
+        super().__init__(code=code, message=message)
 
 
 class ComponentAlreadyRegisteredError(RegistryError):
@@ -81,10 +90,10 @@ class ComponentRegistry:
         normalized_name = self._normalize_name(name)
         if normalized_name in storage:
             msg = f"{role_name} '{normalized_name}' is already registered"
-            raise ComponentAlreadyRegisteredError(msg)
+            raise ComponentAlreadyRegisteredError(msg, code="component_already_registered")
         if not isinstance(component, protocol):
             msg = f"{role_name} '{normalized_name}' must implement the {protocol.__name__} protocol"
-            raise ComponentValidationError(msg)
+            raise ComponentValidationError(msg, code="component_validation_failed")
         storage[normalized_name] = component
 
     def _get_component[T](
@@ -99,7 +108,7 @@ class ComponentRegistry:
             return storage[normalized_name]
         except KeyError as exc:
             msg = f"{role_name} '{normalized_name}' is not registered"
-            raise ComponentNotFoundError(msg) from exc
+            raise ComponentNotFoundError(msg, code="component_not_found") from exc
 
     def _normalize_name(self, name: str) -> str:
         normalized_name = name.strip().lower()

@@ -4,6 +4,7 @@ import pytest
 
 from fastrag.config import ComponentDefaults
 from fastrag.dependencies import ComponentResolver
+from fastrag.errors import DependencyConfigurationError
 from fastrag.protocols import Embedder
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 from fastrag.registry import ComponentRegistry
@@ -49,7 +50,10 @@ def test_component_resolver_rejects_missing_default_configuration() -> None:
         defaults=ComponentDefaults(),
     )
 
-    with pytest.raises(ValueError, match="No default embedder configured for this app"):
+    with pytest.raises(
+        DependencyConfigurationError,
+        match="No default embedder configured for this app",
+    ):
         resolver.resolve_embedder(None)
 
 

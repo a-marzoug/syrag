@@ -4,6 +4,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from fastrag.errors import ProviderRequestError, ProviderResponseError
 from fastrag.providers import OpenAIEmbedder, OpenAILLM, SQLiteVectorStore
 from fastrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
 
@@ -162,3 +163,46 @@ async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
         "completion_tokens": 7,
         "total_tokens": 18,
     }
+
+
+@pytest.mark.asyncio
+async def test_openai_embedder_raises_provider_request_error_for_http_failures() -> None:
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=503, json={"error": {"message": "unavailable"}})
+
+    provider = OpenAIEmbedder(
+        api_key="test-key",
+        model="text-embedding-3-small",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(
+        ProviderRequestError,
+        match="OpenAI embeddings request failed with status 503",
+    ):
+        await provider.embed(["hello"])
+
+
+@pytest.mark.asyncio
+async def test_openai_llm_raises_provider_response_error_for_missing_output_text() -> None:
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status_code=200, json={"output": []})
+
+    provider = OpenAILLM(
+        api_key="test-key",
+        model="gpt-5.4-mini",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(
+        ProviderResponseError,
+        match="OpenAI responses output did not contain text output",
+    ):
+        await provider.generate(
+            generation=GenerationRequest(
+                query=QueryRequest(query="What is FastRAG?"),
+                context=[],
+                prompt="Question: What is FastRAG?",
+                require_citations=False,
+            )
+        )

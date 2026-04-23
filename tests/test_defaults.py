@@ -3,6 +3,7 @@ from httpx import ASGITransport, AsyncClient
 
 from fastrag.app import create_app
 from fastrag.config import ComponentDefaults, Settings
+from fastrag.errors import DependencyConfigurationError
 from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 from fastrag.schemas import IngestRequest, QueryRequest
 
@@ -55,7 +56,10 @@ async def test_routes_can_use_configured_default_component_names() -> None:
 def test_missing_default_component_configuration_is_rejected() -> None:
     app = create_app(Settings(defaults=ComponentDefaults()))
 
-    with pytest.raises(ValueError, match="No default embedder configured for this app"):
+    with pytest.raises(
+        DependencyConfigurationError,
+        match="No default embedder configured for this app",
+    ):
         app.query(
             "/query",
             vector_store=InMemoryVectorStore(),
