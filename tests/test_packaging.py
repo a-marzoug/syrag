@@ -19,6 +19,22 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert optional_dependencies["server"] == ["uvicorn[standard]>=0.44.0"]
 
 
+def test_pyproject_declares_release_metadata() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    project = pyproject["project"]
+
+    assert project["license"] == "Apache-2.0"
+    assert project["authors"] == [{"name": "A. Marzoug"}]
+    assert project["requires-python"] == ">=3.12,<3.14"
+    assert project["urls"] == {
+        "Repository": "https://github.com/a-marzoug/fastrag",
+        "Issues": "https://github.com/a-marzoug/fastrag/issues",
+        "Documentation": "https://github.com/a-marzoug/fastrag/tree/main/docs",
+    }
+    assert "Programming Language :: Python :: 3.12" in project["classifiers"]
+    assert "Programming Language :: Python :: 3.13" in project["classifiers"]
+
+
 def test_optional_dependency_error_mentions_install_extra() -> None:
     error = missing_optional_dependency(feature="fastrag.testing", extra="testing")
 
