@@ -1,0 +1,145 @@
+# FastRAG
+
+FastRAG is a production-oriented Python framework for building Retrieval-Augmented Generation services with a small, typed API on top of FastAPI.
+
+Supported Python versions: `3.12` and `3.13`.
+
+It currently ships:
+
+- `FastRAG` application wrapper plus `create_app()`
+- `@app.ingest(...)` and `@app.query(...)` decorators
+- typed request and response schemas
+- in-memory providers for local development
+- SQLite and OpenAI provider packages behind optional extras
+- request context, auth hooks, tenant scoping, rate limiting, and safety guards
+- OpenAPI docs, structured logging, and OpenTelemetry-compatible tracing
+- a testing toolkit with fake providers and ASGI client helpers
+
+## Installation
+
+Core package:
+
+```bash
+pip install fastrag
+```
+
+Optional integrations:
+
+```bash
+pip install "fastrag[openai]"
+pip install "fastrag[testing]"
+pip install "fastrag[server]"
+pip install "fastrag[all]"
+```
+
+## Quick Start
+
+```python
+from fastrag import (
+    FastRAG,
+    InMemoryEmbedder,
+    InMemoryLLM,
+    InMemoryVectorStore,
+    IngestRequest,
+    QueryRequest,
+    Settings,
+)
+
+app = FastRAG(
+    title="Support Bot",
+    version="0.1.0",
+    description="Internal support assistant",
+    settings=Settings(),
+)
+
+app.register_embedder("default", InMemoryEmbedder())
+app.register_vector_store("default", InMemoryVectorStore())
+app.register_llm("default", InMemoryLLM())
+app.configure_defaults(
+    embedder="default",
+    vector_store="default",
+    llm="default",
+)
+
+
+@app.ingest("/ingest")
+async def ingest(request: IngestRequest) -> IngestRequest:
+    return request
+
+
+@app.query("/query")
+async def query(request: QueryRequest) -> QueryRequest:
+    return request
+```
+
+Serve the app with any ASGI server. With the `server` extra installed:
+
+```bash
+uvicorn main:app.api --reload
+```
+
+The framework exposes:
+
+- `POST /ingest`
+- `POST /query`
+- `GET /health`
+- OpenAPI docs at `/docs`
+
+## Extension Points
+
+FastRAG keeps the pipeline explicit. You can swap or extend:
+
+- `Chunker`
+- `Embedder`
+- `VectorStore`
+- `RetrievalStrategy`
+- `PromptAssembler`
+- `GenerationPolicy`
+- `LLM`
+- `RequestContextHook`
+- `AuthHook`
+- `RateLimiter`
+- `SafetyGuard`
+
+## First-Party Providers
+
+Core:
+
+- `InMemoryEmbedder`
+- `InMemoryVectorStore`
+- `InMemoryLLM`
+- `PassThroughChunker`
+- `SQLiteVectorStore`
+
+Optional `openai` extra:
+
+- `OpenAIEmbedder`
+- `OpenAILLM`
+
+## Observability And Operations
+
+FastRAG includes:
+
+- structured error responses with stage information
+- request-scoped `RequestContext` with request IDs and tenant IDs
+- `StructuredLogging` and `JSONLogFormatter`
+- `OpenTelemetryTracing` built on the OpenTelemetry API package
+- request throttling via `InMemoryRateLimiter`
+- payload validation via `DefaultSafetyGuard`
+
+## Testing
+
+Install the `testing` extra to use:
+
+- `create_test_app(...)`
+- `create_test_client(...)`
+- `seed_documents(...)`
+- fake providers such as `FakeEmbedder`, `FakeVectorStore`, and `FakeLLM`
+
+## Docs
+
+- [Docs index](docs/index.md)
+- [Overview](docs/overview.md)
+- [Architecture](docs/architecture.md)
+- [Component contracts](docs/component-contracts.md)
+- [MVP status](docs/mvp-roadmap.md)
