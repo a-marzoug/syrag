@@ -73,6 +73,7 @@ packages = ["src/fastrag"]
 exclude = [
     "/.codex",
     "/.gemini",
+    "/.github",
     "/.mypy_cache",
     "/.pytest_cache",
     "/.ruff_cache",
