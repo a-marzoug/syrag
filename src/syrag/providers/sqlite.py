@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastrag.protocols import EmbeddingVector, Filters, VectorStore
-from fastrag.schemas import DocumentChunk, RetrievedChunk
+from syrag.protocols import EmbeddingVector, Filters, VectorStore
+from syrag.schemas import DocumentChunk, RetrievedChunk
 
 
 @dataclass(slots=True)

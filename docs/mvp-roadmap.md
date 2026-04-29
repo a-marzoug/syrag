@@ -6,7 +6,7 @@ This document now tracks the implemented MVP surface rather than a future releas
 
 ### Application surface
 
-- `FastRAG` application wrapper
+- `SyRAG` application wrapper
 - `create_app()` bootstrap helper
 - `@app.ingest(...)` and `@app.query(...)`
 - typed request, response, chunk, citation, and context schemas
@@ -19,7 +19,7 @@ This document now tracks the implemented MVP surface rather than a future releas
 - prompt assembly abstraction
 - generation policy abstraction
 - async query and ingest execution
-- structured FastRAG error responses
+- structured SyRAG error responses
 
 ### Request-scoped operations
 

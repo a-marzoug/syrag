@@ -3,7 +3,7 @@ from collections.abc import Sequence
 import pytest
 from starlette.requests import Request
 
-from fastrag.protocols import (
+from syrag.protocols import (
     LLM,
     AuthHook,
     Chunker,
@@ -16,7 +16,7 @@ from fastrag.protocols import (
     SafetyGuard,
     VectorStore,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     AssembledPrompt,
     Citation,
     DocumentChunk,
@@ -28,7 +28,7 @@ from fastrag.schemas import (
     RetrievedChunk,
     SourceDocument,
 )
-from fastrag.services import RetrievalStrategy
+from syrag.services import RetrievalStrategy
 
 
 class ExampleEmbedder:
@@ -60,7 +60,7 @@ class ExampleVectorStore:
             RetrievedChunk(
                 chunk_id="doc-1-chunk-0",
                 source_id="doc-1",
-                content="FastRAG wraps FastAPI for RAG workloads.",
+                content="SyRAG wraps FastAPI for RAG workloads.",
                 score=0.95,
                 metadata={},
                 page_number=1,
@@ -230,19 +230,19 @@ async def test_example_llm_returns_typed_response() -> None:
     llm = ExampleLLM()
     response = await llm.generate(
         generation=GenerationRequest(
-            query=QueryRequest(query="What is FastRAG?"),
+            query=QueryRequest(query="What is SyRAG?"),
             context=[
                 RetrievedChunk(
                     chunk_id="prd-chunk-0",
                     source_id="prd",
-                    content="FastRAG is a production-first Python framework for RAG services.",
+                    content="SyRAG is a production-first Python framework for RAG services.",
                     score=0.99,
                     metadata={},
                     page_number=1,
                     chunk_index=0,
                 )
             ],
-            prompt="Question: What is FastRAG?",
+            prompt="Question: What is SyRAG?",
             system_prompt="Ground the answer in context.",
             require_citations=True,
         ),

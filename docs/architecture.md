@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the current FastRAG architecture and the boundaries it exposes as public framework seams.
+This document describes the current SyRAG architecture and the boundaries it exposes as public framework seams.
 
 ## Design Goals
 
@@ -23,9 +23,9 @@ flowchart TD
 
 ### 1. Application Layer
 
-This layer is the `FastRAG` wrapper around `FastAPI`. It owns:
+This layer is the `SyRAG` wrapper around `FastAPI`. It owns:
 
-- `FastRAG` app initialization
+- `SyRAG` app initialization
 - `@app.ingest(...)` and `@app.query(...)` decorators
 - request validation through Pydantic models
 - automatic OpenAPI generation
@@ -71,7 +71,7 @@ The registry boundary is intentionally narrow. It does not currently implement p
 
 ### 5. Providers
 
-Providers adapt external or internal implementations to FastRAG protocols. First-party providers currently include:
+Providers adapt external or internal implementations to SyRAG protocols. First-party providers currently include:
 
 - `InMemoryEmbedder`
 - `InMemoryVectorStore`
@@ -90,10 +90,10 @@ Cross-cutting services currently include:
 - `StructuredLogging` and `JSONLogFormatter`
 - `InMemoryRateLimiter`
 - `DefaultSafetyGuard`
-- the FastRAG error taxonomy
+- the SyRAG error taxonomy
 - the observability hub that emits stage events
 
-FastRAG depends only on the OpenTelemetry API package. SDK and exporter configuration remain an application concern.
+SyRAG depends only on the OpenTelemetry API package. SDK and exporter configuration remain an application concern.
 
 ## Query Flow
 

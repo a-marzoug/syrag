@@ -9,15 +9,15 @@ from typing import Any, cast
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, QueryRequest
-from fastrag.structured_logging import JSONLogFormatter, StructuredLogging
+from syrag.app import create_app
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import DocumentChunk, QueryRequest
+from syrag.structured_logging import JSONLogFormatter, StructuredLogging
 
 
-def _fastrag_payload(record: logging.LogRecord) -> dict[str, Any]:
+def _syrag_payload(record: logging.LogRecord) -> dict[str, Any]:
     typed_record = cast(Any, record)
-    return cast(dict[str, Any], typed_record.fastrag)
+    return cast(dict[str, Any], typed_record.syrag)
 
 
 @pytest.mark.asyncio
@@ -25,7 +25,7 @@ async def test_query_route_emits_structured_request_and_pipeline_logs(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     app = create_app()
-    logger = logging.getLogger("fastrag.test.logging.query")
+    logger = logging.getLogger("syrag.test.logging.query")
     app.configure_logging(structured_logging=StructuredLogging(logger=logger))
     embedder = InMemoryEmbedder()
     vector_store = InMemoryVectorStore()
@@ -34,7 +34,7 @@ async def test_query_route_emits_structured_request_and_pipeline_logs(
 
     embeddings = await embedder.embed(
         [
-            "FastRAG is a production-first Python framework for RAG services.",
+            "SyRAG is a production-first Python framework for RAG services.",
             "It emphasizes observability, type safety, and multi-tenancy.",
         ]
     )
@@ -43,7 +43,7 @@ async def test_query_route_emits_structured_request_and_pipeline_logs(
             DocumentChunk(
                 chunk_id="overview-1-chunk-0",
                 source_id="overview-1",
-                content="FastRAG is a production-first Python framework for RAG services.",
+                content="SyRAG is a production-first Python framework for RAG services.",
                 metadata={"source_id": "overview-1", "page_number": 1},
                 page_number=1,
                 chunk_index=0,
@@ -77,35 +77,35 @@ async def test_query_route_emits_structured_request_and_pipeline_logs(
     ) as client:
         response = await client.post(
             "/query",
-            json={"query": "What is FastRAG?", "collection": "overview"},
+            json={"query": "What is SyRAG?", "collection": "overview"},
             headers={"x-request-id": "request-123", "x-tenant-id": "tenant-a"},
         )
 
     assert response.status_code == 200
-    fastrag_records = [
+    syrag_records = [
         record
         for record in caplog.records
-        if record.name == logger.name and hasattr(record, "fastrag")
+        if record.name == logger.name and hasattr(record, "syrag")
     ]
 
     assert any(
-        _fastrag_payload(record) == {
-            "event": "fastrag.pipeline",
+        _syrag_payload(record) == {
+            "event": "syrag.pipeline",
             "operation": "query",
             "stage": "embed",
             "status": "started",
             "component": "InMemoryEmbedder",
             "details": {},
         }
-        for record in fastrag_records
+        for record in syrag_records
     )
 
     request_record = next(
         record
-        for record in fastrag_records
-        if _fastrag_payload(record).get("event") == "fastrag.request"
+        for record in syrag_records
+        if _syrag_payload(record).get("event") == "syrag.request"
     )
-    request_payload = _fastrag_payload(request_record)
+    request_payload = _syrag_payload(request_record)
     assert request_payload["status"] == "completed"
     assert request_payload["request_id"] == "request-123"
     assert request_payload["tenant_id"] == "tenant-a"
@@ -122,7 +122,7 @@ async def test_failed_query_emits_error_level_structured_logs(
             raise RuntimeError("embedder crashed")
 
     app = create_app()
-    logger = logging.getLogger("fastrag.test.logging.failure")
+    logger = logging.getLogger("syrag.test.logging.failure")
     app.configure_logging(structured_logging=StructuredLogging(logger=logger))
     caplog.set_level(logging.INFO, logger=logger.name)
 
@@ -139,37 +139,37 @@ async def test_failed_query_emits_error_level_structured_logs(
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 500
-    fastrag_records = [
+    syrag_records = [
         record
         for record in caplog.records
-        if record.name == logger.name and hasattr(record, "fastrag")
+        if record.name == logger.name and hasattr(record, "syrag")
     ]
     failed_stage_record = next(
         record
-        for record in fastrag_records
-        if _fastrag_payload(record).get("event") == "fastrag.pipeline"
-        and _fastrag_payload(record).get("stage") == "embed"
-        and _fastrag_payload(record).get("status") == "failed"
+        for record in syrag_records
+        if _syrag_payload(record).get("event") == "syrag.pipeline"
+        and _syrag_payload(record).get("stage") == "embed"
+        and _syrag_payload(record).get("status") == "failed"
     )
     assert failed_stage_record.levelno == logging.ERROR
-    assert _fastrag_payload(failed_stage_record)["details"] == {"error_type": "RuntimeError"}
+    assert _syrag_payload(failed_stage_record)["details"] == {"error_type": "RuntimeError"}
 
     request_record = next(
         record
-        for record in fastrag_records
-        if _fastrag_payload(record).get("event") == "fastrag.request"
+        for record in syrag_records
+        if _syrag_payload(record).get("event") == "syrag.request"
     )
     assert request_record.levelno == logging.ERROR
-    request_payload = _fastrag_payload(request_record)
+    request_payload = _syrag_payload(request_record)
     assert request_payload["status"] == "failed"
     assert request_payload["status_code"] == 500
 
 
 def test_json_log_formatter_serializes_structured_payloads() -> None:
-    logger = logging.getLogger("fastrag.test.logging.formatter")
+    logger = logging.getLogger("syrag.test.logging.formatter")
     logger.handlers.clear()
     logger.setLevel(logging.INFO)
     logger.propagate = False
@@ -180,10 +180,10 @@ def test_json_log_formatter_serializes_structured_payloads() -> None:
 
     try:
         logger.info(
-            "FastRAG request completed",
+            "SyRAG request completed",
             extra={
-                "fastrag": {
-                    "event": "fastrag.request",
+                "syrag": {
+                    "event": "syrag.request",
                     "status": "completed",
                     "status_code": 200,
                 }
@@ -194,8 +194,8 @@ def test_json_log_formatter_serializes_structured_payloads() -> None:
         logger.propagate = True
 
     payload = json.loads(stream.getvalue())
-    assert payload["event"] == "fastrag.request"
+    assert payload["event"] == "syrag.request"
     assert payload["status"] == "completed"
     assert payload["status_code"] == 200
     assert payload["level"] == "INFO"
-    assert payload["message"] == "FastRAG request completed"
+    assert payload["message"] == "SyRAG request completed"

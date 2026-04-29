@@ -5,8 +5,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers import (
+from syrag.protocols import LLM, Embedder, VectorStore
+from syrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
@@ -14,7 +14,7 @@ from fastrag.providers import (
     OpenAILLM,
     SQLiteVectorStore,
 )
-from fastrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
+from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
 
 type AsyncFactory[T] = Callable[[], Awaitable[T]]
 
@@ -65,7 +65,7 @@ async def _build_openai_llm() -> LLM:
                 "output": [
                     {
                         "content": [
-                            {"type": "output_text", "text": "FastRAG contract answer."}
+                            {"type": "output_text", "text": "SyRAG contract answer."}
                         ]
                     }
                 ],
@@ -98,7 +98,7 @@ async def test_embedder_contract_returns_one_float_vector_per_input(
 ) -> None:
     embedder = await factory()
 
-    embeddings = await embedder.embed(["FastRAG", "RAG services"])
+    embeddings = await embedder.embed(["SyRAG", "RAG services"])
     empty_embeddings = await embedder.embed([])
 
     assert isinstance(embedder, Embedder), provider_name
@@ -213,19 +213,19 @@ async def test_llm_contract_returns_answer_usage_and_optional_citations(
 ) -> None:
     llm = await factory()
     generation = GenerationRequest(
-        query=QueryRequest(query="What is FastRAG?"),
+        query=QueryRequest(query="What is SyRAG?"),
         context=[
             RetrievedChunk(
                 chunk_id="overview-chunk-0",
                 source_id="overview",
-                content="FastRAG is a production-first Python framework for RAG services.",
+                content="SyRAG is a production-first Python framework for RAG services.",
                 score=0.98,
                 metadata={},
                 page_number=1,
                 chunk_index=0,
             )
         ],
-        prompt="Question: What is FastRAG?",
+        prompt="Question: What is SyRAG?",
         system_prompt="Ground the answer in context.",
         require_citations=True,
     )

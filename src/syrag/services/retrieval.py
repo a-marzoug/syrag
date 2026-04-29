@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from fastrag.errors import PipelineStageError
-from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import EmbeddingVector, VectorStore
-from fastrag.schemas import QueryRequest, RetrievedChunk
+from syrag.errors import PipelineStageError
+from syrag.observability import ObservabilityHub, PipelineEvent
+from syrag.protocols import EmbeddingVector, VectorStore
+from syrag.schemas import QueryRequest, RetrievedChunk
 
 
 @runtime_checkable

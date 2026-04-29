@@ -4,9 +4,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from starlette.requests import Request
 
-from fastrag.app import create_app
-from fastrag.errors import FastRAGError
-from fastrag.protocols import (
+from syrag.app import create_app
+from syrag.errors import SyRAGError
+from syrag.protocols import (
     LLM,
     AuthHook,
     Embedder,
@@ -15,7 +15,7 @@ from fastrag.protocols import (
     GenerationPolicy,
     VectorStore,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
     GenerationRequest,
@@ -85,7 +85,7 @@ class FailingAuthHook(AuthHook):
         request: Request,
         context: RequestContext,
     ) -> RequestContext:
-        raise FastRAGError(
+        raise SyRAGError(
             code="authentication_failed",
             message="Failed to authenticate the request.",
             stage="auth",
@@ -111,7 +111,7 @@ async def test_query_failures_return_stage_aware_error_response() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 500
     assert response.json() == {
@@ -140,7 +140,7 @@ async def test_ingest_failures_return_stage_aware_error_response() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/ingest", json={"documents": ["FastRAG doc"]})
+        response = await client.post("/ingest", json={"documents": ["SyRAG doc"]})
 
     assert response.status_code == 500
     assert response.json() == {
@@ -171,7 +171,7 @@ async def test_generation_policy_failures_return_stage_aware_error_response() ->
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 500
     assert response.json() == {
@@ -202,7 +202,7 @@ async def test_auth_hook_failures_return_stage_aware_error_response() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 401
     assert response.json() == {
@@ -234,7 +234,7 @@ async def test_tenant_mismatch_returns_structured_error_response() -> None:
     ) as client:
         response = await client.post(
             "/query",
-            json={"query": "What is FastRAG?", "tenant_id": "tenant-b"},
+            json={"query": "What is SyRAG?", "tenant_id": "tenant-b"},
             headers={"x-tenant-id": "tenant-a"},
         )
 

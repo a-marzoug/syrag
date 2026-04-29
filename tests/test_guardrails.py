@@ -3,11 +3,11 @@ from collections.abc import Sequence
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
-from fastrag.protocols import Embedder
-from fastrag.providers import InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.app import create_app
+from syrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
+from syrag.protocols import Embedder
+from syrag.providers import InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 class StaticEmbedder(Embedder):

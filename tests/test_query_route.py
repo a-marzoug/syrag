@@ -4,23 +4,23 @@ from typing import cast
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.protocols import (
+from syrag.app import create_app
+from syrag.protocols import (
     Embedder,
     EmbeddingVector,
     GenerationPolicy,
     PromptAssembler,
     VectorStore,
 )
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import (
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
     GenerationRequest,
     QueryRequest,
     RetrievedChunk,
 )
-from fastrag.services import RetrievalStrategy
+from syrag.services import RetrievalStrategy
 
 
 class StubRetrievalStrategy(RetrievalStrategy):
@@ -101,7 +101,7 @@ async def test_query_decorator_registers_grounded_query_route() -> None:
     llm = InMemoryLLM()
 
     documents = [
-        "FastRAG is a production-first Python framework for RAG services.",
+        "SyRAG is a production-first Python framework for RAG services.",
         "It emphasizes observability, type safety, and multi-tenancy.",
     ]
     embeddings = await embedder.embed(documents)
@@ -144,7 +144,7 @@ async def test_query_decorator_registers_grounded_query_route() -> None:
         response = await client.post(
             "/query",
             json={
-                "query": "What is FastRAG?",
+                "query": "What is SyRAG?",
                 "collection": "overview",
                 "top_k": 2,
             },
@@ -152,7 +152,7 @@ async def test_query_decorator_registers_grounded_query_route() -> None:
 
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "overview-1"
-    assert "FastRAG" in response.json()["answer"]
+    assert "SyRAG" in response.json()["answer"]
 
 
 def test_query_decorator_rejects_invalid_components() -> None:
@@ -233,7 +233,7 @@ async def test_query_decorator_accepts_custom_retrieval_strategy() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "custom-doc"
@@ -258,7 +258,7 @@ async def test_query_decorator_accepts_custom_prompt_assembler() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "assembled-doc"
@@ -283,7 +283,7 @@ async def test_query_decorator_accepts_custom_generation_policy() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/query", json={"query": "What is FastRAG?"})
+        response = await client.post("/query", json={"query": "What is SyRAG?"})
 
     assert response.status_code == 200
     assert response.json()["citations"] == []

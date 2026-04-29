@@ -1,18 +1,18 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.config import (
+from syrag.app import create_app
+from syrag.config import (
     BootstrapSettings,
     ComponentDefaults,
     InMemoryProviderSettings,
     ProviderSettings,
     Settings,
 )
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.registry import ComponentNotFoundError
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.protocols import LLM, Embedder, VectorStore
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.registry import ComponentNotFoundError
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 class StubProviderFactory:
@@ -63,7 +63,7 @@ async def test_bootstrap_can_register_default_in_memory_components() -> None:
         ingest_response = await client.post(
             "/ingest",
             json={
-                "documents": ["FastRAG bootstraps default in-memory components."],
+                "documents": ["SyRAG bootstraps default in-memory components."],
                 "collection": "bootstrap",
                 "metadata": {"source_id": "bootstrap-doc", "page_number": 1},
             },

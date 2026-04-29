@@ -1,9 +1,8 @@
 import pytest
 
-from fastrag.errors import (
+from syrag.errors import (
     ConfigurationError,
     DependencyConfigurationError,
-    FastRAGError,
     PipelineRuntimeError,
     PipelineStageError,
     ProviderError,
@@ -12,6 +11,7 @@ from fastrag.errors import (
     RateLimitExceededError,
     RequestValidationError,
     SafetyGuardError,
+    SyRAGError,
 )
 
 
@@ -85,7 +85,7 @@ from fastrag.errors import (
     ],
 )
 def test_exception_taxonomy_exposes_expected_defaults(
-    error: FastRAGError,
+    error: SyRAGError,
     expected_category: str,
     expected_stage: str,
     expected_status_code: int,

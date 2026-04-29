@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from fastrag.config import ProviderSettings
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers.in_memory import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.config import ProviderSettings
+from syrag.protocols import LLM, Embedder, VectorStore
+from syrag.providers.in_memory import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
 
 
 class ProviderFactory(Protocol):

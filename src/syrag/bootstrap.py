@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from fastrag.config import BootstrapSettings, ComponentDefaults, ProviderSettings
-from fastrag.providers import InMemoryProviderFactory, ProviderFactory
-from fastrag.registry import ComponentRegistry
+from syrag.config import BootstrapSettings, ComponentDefaults, ProviderSettings
+from syrag.providers import InMemoryProviderFactory, ProviderFactory
+from syrag.registry import ComponentRegistry
 
 
 class BootstrapService:

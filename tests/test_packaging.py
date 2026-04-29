@@ -1,9 +1,9 @@
 import tomllib
 from pathlib import Path
 
-import fastrag
-from fastrag._optional import missing_optional_dependency
-from fastrag.providers import __all__ as provider_exports
+import syrag
+from syrag._optional import missing_optional_dependency
+from syrag.providers import __all__ as provider_exports
 
 
 def test_pyproject_declares_optional_extension_boundaries() -> None:
@@ -37,15 +37,15 @@ def test_pyproject_declares_release_metadata() -> None:
 
 
 def test_optional_dependency_error_mentions_install_extra() -> None:
-    error = missing_optional_dependency(feature="fastrag.testing", extra="testing")
+    error = missing_optional_dependency(feature="syrag.testing", extra="testing")
 
     assert str(error) == (
-        "fastrag.testing requires the optional 'testing' extra. "
+        "syrag.testing requires the optional 'testing' extra. "
         "Install with `pip install syrag[testing]`."
     )
 
 
 def test_optional_integrations_are_exported_when_installed() -> None:
     assert "OpenAIEmbedder" in provider_exports
-    assert "OpenAIEmbedder" in fastrag.__all__
-    assert "create_test_client" in fastrag.__all__
+    assert "OpenAIEmbedder" in syrag.__all__
+    assert "create_test_client" in syrag.__all__

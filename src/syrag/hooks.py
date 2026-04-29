@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from starlette.requests import Request
 
-from fastrag.schemas import RequestContext
+from syrag.schemas import RequestContext
 
 
 class DefaultRequestContextHook:

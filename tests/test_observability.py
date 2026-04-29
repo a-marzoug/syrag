@@ -1,15 +1,15 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.observability import PipelineEvent
-from fastrag.providers import (
+from syrag.app import create_app
+from syrag.observability import PipelineEvent
+from syrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
     PassThroughChunker,
 )
-from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest
+from syrag.schemas import DocumentChunk, IngestRequest, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -23,7 +23,7 @@ async def test_query_route_emits_stage_events() -> None:
 
     embeddings = await embedder.embed(
         [
-            "FastRAG is a production-first Python framework for RAG services.",
+            "SyRAG is a production-first Python framework for RAG services.",
             "It emphasizes observability, type safety, and multi-tenancy.",
         ]
     )
@@ -32,7 +32,7 @@ async def test_query_route_emits_stage_events() -> None:
             DocumentChunk(
                 chunk_id="overview-1-chunk-0",
                 source_id="overview-1",
-                content="FastRAG is a production-first Python framework for RAG services.",
+                content="SyRAG is a production-first Python framework for RAG services.",
                 metadata={"source_id": "overview-1", "page_number": 1},
                 page_number=1,
                 chunk_index=0,
@@ -65,7 +65,7 @@ async def test_query_route_emits_stage_events() -> None:
     ) as client:
         response = await client.post(
             "/query",
-            json={"query": "What is FastRAG?", "collection": "overview"},
+            json={"query": "What is SyRAG?", "collection": "overview"},
         )
 
     assert response.status_code == 200
@@ -102,7 +102,7 @@ async def test_ingest_route_emits_stage_events() -> None:
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/ingest", json={"documents": ["FastRAG doc"]})
+        response = await client.post("/ingest", json={"documents": ["SyRAG doc"]})
 
     assert response.status_code == 200
     assert [(event.stage, event.status) for event in events] == [

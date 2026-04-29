@@ -1,14 +1,14 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import FastRAG, create_app
+from syrag.app import SyRAG, create_app
 
 
-def test_create_app_returns_fastrag_wrapper() -> None:
+def test_create_app_returns_syrag_wrapper() -> None:
     application = create_app()
 
-    assert isinstance(application, FastRAG)
-    assert application.api.title == "FastRAG"
+    assert isinstance(application, SyRAG)
+    assert application.api.title == "SyRAG"
     assert application.api.version == "0.1.0"
 
 
@@ -24,5 +24,5 @@ async def test_healthcheck_returns_service_metadata() -> None:
     assert response.json() == {
         "status": "ok",
         "environment": "development",
-        "service": "FastRAG",
+        "service": "SyRAG",
     }

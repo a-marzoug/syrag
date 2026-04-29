@@ -1,4 +1,4 @@
-from fastrag.schemas import AssembledPrompt, GenerationRequest
+from syrag.schemas import AssembledPrompt, GenerationRequest
 
 DEFAULT_SYSTEM_PROMPT = (
     "Answer using the retrieved context when it is available. "

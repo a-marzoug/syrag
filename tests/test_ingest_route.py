@@ -3,10 +3,10 @@ from typing import cast
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.protocols import Chunker, Embedder
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.app import create_app
+from syrag.protocols import Chunker, Embedder
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -42,7 +42,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
             "/ingest",
             json={
                 "documents": [
-                    "FastRAG provides a production-first Python framework for RAG services.",
+                    "SyRAG provides a production-first Python framework for RAG services.",
                     "It is designed to feel familiar to FastAPI users.",
                 ],
                 "collection": "overview",
@@ -53,7 +53,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
         query_response = await client.post(
             "/query",
             json={
-                "query": "What is FastRAG?",
+                "query": "What is SyRAG?",
                 "collection": "overview",
                 "top_k": 2,
             },
@@ -69,7 +69,7 @@ async def test_ingest_decorator_registers_ingestion_route() -> None:
     }
     assert query_response.status_code == 200
     assert query_response.json()["citations"][0]["source_id"] == "overview-0"
-    assert "FastRAG" in query_response.json()["answer"]
+    assert "SyRAG" in query_response.json()["answer"]
 
 
 def test_ingest_decorator_rejects_invalid_components() -> None:

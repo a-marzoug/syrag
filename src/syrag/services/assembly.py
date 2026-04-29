@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from fastrag.schemas import AssembledPrompt, QueryRequest, RetrievedChunk
+from syrag.schemas import AssembledPrompt, QueryRequest, RetrievedChunk
 
 
 class DefaultPromptAssembler:

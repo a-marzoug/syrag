@@ -1,8 +1,8 @@
 # Product Overview
 
-## What FastRAG Is
+## What SyRAG Is
 
-FastRAG is a Python framework for defining, serving, and operating RAG services with a small application surface and explicit pipeline boundaries. It is built around typed HTTP routes, protocol-based components, and production-facing defaults.
+SyRAG is a Python framework for defining, serving, and operating RAG services with a small application surface and explicit pipeline boundaries. It is built around typed HTTP routes, protocol-based components, and production-facing defaults.
 
 The current promise is straightforward:
 
@@ -18,7 +18,7 @@ Teams building RAG systems usually start with notebooks or provider SDK calls, t
 - inconsistent interfaces across embedders, vector stores, and generators
 - operational concerns such as request identity, multi-tenancy, and error reporting getting bolted on late
 
-FastRAG addresses that by making the RAG service, not the raw provider call, the unit of application design.
+SyRAG addresses that by making the RAG service, not the raw provider call, the unit of application design.
 
 ## Who It Serves
 
@@ -36,7 +36,7 @@ Secondary users:
 
 ### 1. Fast developer experience
 
-FastRAG lets developers stand up a usable service with typed schemas, decorators, and generated OpenAPI docs.
+SyRAG lets developers stand up a usable service with typed schemas, decorators, and generated OpenAPI docs.
 
 ### 2. Protocol-first design
 
@@ -54,7 +54,7 @@ The core package stays small while provider integrations and testing helpers rem
 
 Application surface:
 
-- `FastRAG(...)` and `create_app(...)`
+- `SyRAG(...)` and `create_app(...)`
 - `@app.ingest(...)` and `@app.query(...)`
 - `QueryRequest`, `IngestRequest`, `RAGResponse`, and related schemas
 - `/health` plus OpenAPI docs through FastAPI
@@ -75,7 +75,7 @@ Operational surface:
 - in-process rate limiting and safety guards
 - OpenTelemetry-compatible tracing
 - structured logging
-- structured FastRAG error taxonomy
+- structured SyRAG error taxonomy
 
 Provider surface:
 
@@ -92,7 +92,7 @@ Testing surface:
 
 ## Current Boundaries
 
-FastRAG currently does not try to be:
+SyRAG currently does not try to be:
 
 - a general agent orchestration system
 - a plugin marketplace
@@ -107,8 +107,8 @@ Those can be added later, but they are not documented as current features.
 The common path looks like this:
 
 ```python
-from fastrag import (
-    FastRAG,
+from syrag import (
+    SyRAG,
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
@@ -117,7 +117,7 @@ from fastrag import (
     Settings,
 )
 
-app = FastRAG(
+app = SyRAG(
     title="Support Bot",
     version="0.1.0",
     description="Internal support assistant",

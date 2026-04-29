@@ -1,7 +1,7 @@
 import pytest
 
-from fastrag.providers import PassThroughChunker
-from fastrag.schemas import SourceDocument
+from syrag.providers import PassThroughChunker
+from syrag.schemas import SourceDocument
 
 
 @pytest.mark.asyncio
@@ -12,7 +12,7 @@ async def test_pass_through_chunker_emits_one_chunk_per_source_document() -> Non
         [
             SourceDocument(
                 source_id="doc-1",
-                content="FastRAG source content.",
+                content="SyRAG source content.",
                 metadata={"topic": "framework"},
                 page_number=1,
             )
@@ -22,4 +22,4 @@ async def test_pass_through_chunker_emits_one_chunk_per_source_document() -> Non
     assert len(chunks) == 1
     assert chunks[0].chunk_id == "doc-1-chunk-0"
     assert chunks[0].source_id == "doc-1"
-    assert chunks[0].content == "FastRAG source content."
+    assert chunks[0].content == "SyRAG source content."

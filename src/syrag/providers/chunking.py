@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from fastrag.protocols import Chunker
-from fastrag.schemas import DocumentChunk, SourceDocument
+from syrag.protocols import Chunker
+from syrag.schemas import DocumentChunk, SourceDocument
 
 
 class PassThroughChunker(Chunker):

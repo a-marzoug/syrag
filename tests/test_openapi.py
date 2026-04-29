@@ -1,6 +1,6 @@
-from fastrag.app import create_app
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.app import create_app
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 def test_query_route_openapi_includes_examples_and_error_responses() -> None:
@@ -64,7 +64,7 @@ def test_ingest_and_health_routes_openapi_include_examples() -> None:
         ingest_operation["requestBody"]["content"]["application/json"]["examples"][
             "document_batch"
         ]["value"]["documents"][0]
-        == "FastRAG is a production-first Python framework for RAG services."
+        == "SyRAG is a production-first Python framework for RAG services."
     )
     assert ingest_operation["responses"]["200"]["content"]["application/json"]["examples"][
         "ingest_completed"

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from fastrag.config import ComponentDefaults
-from fastrag.errors import DependencyConfigurationError
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.registry import ComponentRegistry
+from syrag.config import ComponentDefaults
+from syrag.errors import DependencyConfigurationError
+from syrag.protocols import LLM, Embedder, VectorStore
+from syrag.registry import ComponentRegistry
 
 type EmbedderRef = Embedder | str | None
 type VectorStoreRef = VectorStore | str | None

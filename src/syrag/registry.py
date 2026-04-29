@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Final
 
-from fastrag.errors import ConfigurationError
-from fastrag.protocols import LLM, Embedder, VectorStore
+from syrag.errors import ConfigurationError
+from syrag.protocols import LLM, Embedder, VectorStore
 
 
 class RegistryError(ConfigurationError):
@@ -31,7 +31,7 @@ class ComponentValidationError(RegistryError):
 
 
 class ComponentRegistry:
-    """In-process registry for named FastRAG components."""
+    """In-process registry for named SyRAG components."""
 
     def __init__(self) -> None:
         self._embedders: dict[str, Embedder] = {}

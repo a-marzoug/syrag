@@ -11,9 +11,9 @@ from opentelemetry.trace import Status, StatusCode
 from starlette.requests import Request
 from starlette.responses import Response
 
-from fastrag.errors import FastRAGError
-from fastrag.observability import PipelineEvent
-from fastrag.schemas import RequestContext
+from syrag.errors import SyRAGError
+from syrag.observability import PipelineEvent
+from syrag.schemas import RequestContext
 
 type AttributeValue = (
     str
@@ -56,13 +56,13 @@ class OpenTelemetryTracer(Protocol):
 
 
 class OpenTelemetryTracing:
-    """Bridges FastRAG stage events and request lifecycle into OpenTelemetry spans."""
+    """Bridges SyRAG stage events and request lifecycle into OpenTelemetry spans."""
 
     def __init__(
         self,
         *,
         tracer: OpenTelemetryTracer | None = None,
-        instrumentation_scope: str = "fastrag",
+        instrumentation_scope: str = "syrag",
     ) -> None:
         self.tracer = tracer or trace.get_tracer(instrumentation_scope)
         self.listener = _OpenTelemetryStageListener(self.tracer)
@@ -70,9 +70,9 @@ class OpenTelemetryTracing:
     @contextmanager
     def start_request_span(self, *, request: Request) -> Iterator[OpenTelemetrySpan]:
         with self.tracer.start_as_current_span(
-            "fastrag.request",
+            "syrag.request",
             attributes={
-                "fastrag.span.kind": "request",
+                "syrag.span.kind": "request",
                 "http.request.method": request.method,
                 "url.path": request.url.path,
             },
@@ -85,12 +85,12 @@ class OpenTelemetryTracing:
         span: OpenTelemetrySpan,
         context: RequestContext,
     ) -> None:
-        self._set_attribute(span, "fastrag.request_id", context.request_id)
-        self._set_attribute(span, "fastrag.tenant_id", context.tenant_id)
-        self._set_attribute(span, "fastrag.subject_id", context.subject_id)
-        self._set_attribute(span, "fastrag.auth_scheme", context.auth_scheme)
+        self._set_attribute(span, "syrag.request_id", context.request_id)
+        self._set_attribute(span, "syrag.tenant_id", context.tenant_id)
+        self._set_attribute(span, "syrag.subject_id", context.subject_id)
+        self._set_attribute(span, "syrag.auth_scheme", context.auth_scheme)
         if context.scopes:
-            span.set_attribute("fastrag.scopes", list(context.scopes))
+            span.set_attribute("syrag.scopes", list(context.scopes))
 
     def finish_request_span(
         self,
@@ -114,10 +114,10 @@ class OpenTelemetryTracing:
     ) -> None:
         span.record_exception(exception)
         span.set_status(Status(StatusCode.ERROR))
-        if isinstance(exception, FastRAGError):
-            span.set_attribute("fastrag.error.code", exception.code)
-            span.set_attribute("fastrag.error.category", exception.error_category)
-            span.set_attribute("fastrag.error.stage", exception.stage)
+        if isinstance(exception, SyRAGError):
+            span.set_attribute("syrag.error.code", exception.code)
+            span.set_attribute("syrag.error.category", exception.error_category)
+            span.set_attribute("syrag.error.stage", exception.stage)
 
     def _set_attribute(
         self,
@@ -143,7 +143,7 @@ class _OpenTelemetryStageListener:
         )
         if event.status == "started":
             self._active_spans[key] = self.tracer.start_span(
-                f"fastrag.{event.operation}.{event.stage}",
+                f"syrag.{event.operation}.{event.stage}",
                 attributes=self._attributes_for(event),
             )
             return
@@ -169,17 +169,17 @@ class _OpenTelemetryStageListener:
 
     def _attributes_for(self, event: PipelineEvent) -> dict[str, AttributeValue]:
         attributes: dict[str, AttributeValue] = {
-            "fastrag.span.kind": "stage",
-            "fastrag.operation": event.operation,
-            "fastrag.stage": event.stage,
-            "fastrag.status": event.status,
+            "syrag.span.kind": "stage",
+            "syrag.operation": event.operation,
+            "syrag.stage": event.stage,
+            "syrag.status": event.status,
         }
         if event.component is not None:
-            attributes["fastrag.component"] = event.component
+            attributes["syrag.component"] = event.component
         for detail_key, detail_value in event.details.items():
             attribute_value = self._normalize_attribute_value(detail_value)
             if attribute_value is not None:
-                attributes[f"fastrag.detail.{detail_key}"] = attribute_value
+                attributes[f"syrag.detail.{detail_key}"] = attribute_value
         return attributes
 
     def _normalize_attribute_value(self, value: Any) -> AttributeValue | None:

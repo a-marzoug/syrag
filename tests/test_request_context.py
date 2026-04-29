@@ -4,10 +4,10 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from starlette.requests import Request
 
-from fastrag.app import create_app
-from fastrag.protocols import AuthHook, Embedder, RequestContextHook
-from fastrag.providers import InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, QueryRequest, RequestContext
+from syrag.app import create_app
+from syrag.protocols import AuthHook, Embedder, RequestContextHook
+from syrag.providers import InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import DocumentChunk, QueryRequest, RequestContext
 
 
 class FixedRequestContextHook(RequestContextHook):
@@ -110,7 +110,7 @@ async def test_query_routes_run_request_context_and_auth_hooks() -> None:
     ) as client:
         response = await client.post(
             "/query",
-            json={"query": "What is FastRAG?"},
+            json={"query": "What is SyRAG?"},
             headers={"x-user-id": "user-123"},
         )
 
@@ -133,13 +133,13 @@ async def test_query_routes_apply_tenant_context_to_handlers_and_pipeline() -> N
             DocumentChunk(
                 chunk_id="tenant-doc-chunk-0",
                 source_id="tenant-doc",
-                content="Tenant-scoped FastRAG context.",
+                content="Tenant-scoped SyRAG context.",
                 metadata={},
                 page_number=1,
                 chunk_index=0,
             )
         ],
-        embeddings=await embedder.embed(["Tenant-scoped FastRAG context."]),
+        embeddings=await embedder.embed(["Tenant-scoped SyRAG context."]),
         collection="overview",
         tenant_id="tenant-a",
     )

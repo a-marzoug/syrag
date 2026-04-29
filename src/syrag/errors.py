@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 
-class FastRAGError(Exception):
+class SyRAGError(Exception):
     """Base framework exception with HTTP and stage metadata."""
 
     category: ClassVar[str] = "runtime"
@@ -30,7 +30,7 @@ class FastRAGError(Exception):
         self.error_category = type(self).category
 
 
-class ConfigurationError(FastRAGError):
+class ConfigurationError(SyRAGError):
     """Raised when framework configuration is incomplete or inconsistent."""
 
     category = "configuration"
@@ -41,7 +41,7 @@ class DependencyConfigurationError(ConfigurationError):
     """Raised when dependency resolution cannot satisfy a required component."""
 
 
-class RequestValidationError(FastRAGError):
+class RequestValidationError(SyRAGError):
     """Raised when a request is invalid before pipeline execution begins."""
 
     category = "validation"
@@ -55,7 +55,7 @@ class SafetyGuardError(RequestValidationError):
     default_stage = "safety"
 
 
-class RateLimitExceededError(FastRAGError):
+class RateLimitExceededError(SyRAGError):
     """Raised when a request exceeds configured throughput limits."""
 
     category = "safety"
@@ -63,7 +63,7 @@ class RateLimitExceededError(FastRAGError):
     default_status_code = 429
 
 
-class ProviderError(FastRAGError):
+class ProviderError(SyRAGError):
     """Raised when an external provider fails or returns invalid data."""
 
     category = "provider"
@@ -78,7 +78,7 @@ class ProviderResponseError(ProviderError):
     """Raised when a provider returns an invalid or incomplete response."""
 
 
-class PipelineRuntimeError(FastRAGError):
+class PipelineRuntimeError(SyRAGError):
     """Raised when a runtime pipeline stage fails during execution."""
 
     category = "runtime"

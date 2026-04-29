@@ -1,12 +1,12 @@
-# FastRAG
+# SyRAG
 
-FastRAG is a production-oriented Python framework for building Retrieval-Augmented Generation services with a small, typed API on top of FastAPI.
+SyRAG is a production-oriented Python framework for building Retrieval-Augmented Generation services with a small, typed API on top of FastAPI.
 
 Supported Python versions: `3.12` and `3.13`.
 
 It currently ships:
 
-- `FastRAG` application wrapper plus `create_app()`
+- `SyRAG` application wrapper plus `create_app()`
 - `@app.ingest(...)` and `@app.query(...)` decorators
 - typed request and response schemas
 - in-memory providers for local development
@@ -35,8 +35,8 @@ pip install "syrag[all]"
 ## Quick Start
 
 ```python
-from fastrag import (
-    FastRAG,
+from syrag import (
+    SyRAG,
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
@@ -45,7 +45,7 @@ from fastrag import (
     Settings,
 )
 
-app = FastRAG(
+app = SyRAG(
     title="Support Bot",
     version="0.1.0",
     description="Internal support assistant",
@@ -87,7 +87,7 @@ The framework exposes:
 
 ## Extension Points
 
-FastRAG keeps the pipeline explicit. You can swap or extend:
+SyRAG keeps the pipeline explicit. You can swap or extend:
 
 - `Chunker`
 - `Embedder`
@@ -118,7 +118,7 @@ Optional `openai` extra:
 
 ## Observability And Operations
 
-FastRAG includes:
+SyRAG includes:
 
 - structured error responses with stage information
 - request-scoped `RequestContext` with request IDs and tenant IDs

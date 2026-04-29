@@ -3,15 +3,15 @@ from typing import cast
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.protocols import Embedder
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.registry import (
+from syrag.app import create_app
+from syrag.protocols import Embedder
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.registry import (
     ComponentAlreadyRegisteredError,
     ComponentNotFoundError,
     ComponentValidationError,
 )
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 def test_registry_rejects_duplicate_component_names() -> None:
@@ -77,7 +77,7 @@ async def test_routes_can_resolve_components_from_registry() -> None:
         ingest_response = await client.post(
             "/ingest",
             json={
-                "documents": ["FastRAG uses a registry for named component lookup."],
+                "documents": ["SyRAG uses a registry for named component lookup."],
                 "collection": "registry",
                 "metadata": {"source_id": "registry-doc", "page_number": 1},
             },
@@ -85,7 +85,7 @@ async def test_routes_can_resolve_components_from_registry() -> None:
         query_response = await client.post(
             "/query",
             json={
-                "query": "How does FastRAG resolve components?",
+                "query": "How does SyRAG resolve components?",
                 "collection": "registry",
             },
         )

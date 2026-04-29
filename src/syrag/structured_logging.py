@@ -8,12 +8,12 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-from fastrag.observability import PipelineEvent
-from fastrag.schemas import RequestContext
+from syrag.observability import PipelineEvent
+from syrag.schemas import RequestContext
 
 
 class JSONLogFormatter(logging.Formatter):
-    """Formats FastRAG log records as JSON for structured log sinks."""
+    """Formats SyRAG log records as JSON for structured log sinks."""
 
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
@@ -22,9 +22,9 @@ class JSONLogFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        fastrag_payload = getattr(record, "fastrag", None)
-        if isinstance(fastrag_payload, Mapping):
-            payload.update(dict(fastrag_payload))
+        syrag_payload = getattr(record, "syrag", None)
+        if isinstance(syrag_payload, Mapping):
+            payload.update(dict(syrag_payload))
         if record.exc_info is not None:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, sort_keys=True, default=str)
@@ -34,7 +34,7 @@ class StructuredLogging:
     """Bridges framework lifecycle events into structured stdlib log records."""
 
     def __init__(self, *, logger: logging.Logger | None = None) -> None:
-        self.logger = logger or logging.getLogger("fastrag")
+        self.logger = logger or logging.getLogger("syrag")
         self.listener = _StructuredLoggingListener(self.logger)
 
     def log_request(
@@ -52,10 +52,10 @@ class StructuredLogging:
             status = "failed"
         self.logger.log(
             level,
-            "FastRAG request completed" if status == "completed" else "FastRAG request failed",
+            "SyRAG request completed" if status == "completed" else "SyRAG request failed",
             extra={
-                "fastrag": {
-                    "event": "fastrag.request",
+                "syrag": {
+                    "event": "syrag.request",
                     "status": status,
                     "method": request.method,
                     "path": request.url.path,
@@ -82,15 +82,15 @@ class _StructuredLoggingListener:
 
     def __call__(self, event: PipelineEvent) -> None:
         level = logging.ERROR if event.status == "failed" else logging.INFO
-        message = "FastRAG pipeline stage failed"
+        message = "SyRAG pipeline stage failed"
         if event.status != "failed":
-            message = "FastRAG pipeline event"
+            message = "SyRAG pipeline event"
         self.logger.log(
             level,
             message,
             extra={
-                "fastrag": {
-                    "event": "fastrag.pipeline",
+                "syrag": {
+                    "event": "syrag.pipeline",
                     "operation": event.operation,
                     "stage": event.stage,
                     "status": event.status,

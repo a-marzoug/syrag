@@ -4,9 +4,9 @@ from pathlib import Path
 import httpx
 import pytest
 
-from fastrag.errors import ProviderRequestError, ProviderResponseError
-from fastrag.providers import OpenAIEmbedder, OpenAILLM, SQLiteVectorStore
-from fastrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
+from syrag.errors import ProviderRequestError, ProviderResponseError
+from syrag.providers import OpenAIEmbedder, OpenAILLM, SQLiteVectorStore
+from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
 
 
 @pytest.mark.asyncio
@@ -18,7 +18,7 @@ async def test_sqlite_vector_store_persists_across_instances(tmp_path: Path) -> 
             DocumentChunk(
                 chunk_id="product-chunk-0",
                 source_id="product",
-                content="FastRAG is production-first.",
+                content="SyRAG is production-first.",
                 metadata={"topic": "product"},
                 page_number=1,
                 chunk_index=0,
@@ -109,7 +109,7 @@ async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
             },
             {
                 "role": "user",
-                "content": [{"type": "input_text", "text": "Question: What is FastRAG?"}],
+                "content": [{"type": "input_text", "text": "Question: What is SyRAG?"}],
             },
         ]
         return httpx.Response(
@@ -118,7 +118,7 @@ async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
                 "output": [
                     {
                         "content": [
-                            {"type": "output_text", "text": "FastRAG is a Python RAG framework."}
+                            {"type": "output_text", "text": "SyRAG is a Python RAG framework."}
                         ]
                     }
                 ],
@@ -138,25 +138,25 @@ async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
 
     response = await provider.generate(
         generation=GenerationRequest(
-            query=QueryRequest(query="What is FastRAG?"),
+            query=QueryRequest(query="What is SyRAG?"),
             context=[
                 RetrievedChunk(
                     chunk_id="overview-chunk-0",
                     source_id="overview",
-                    content="FastRAG is a production-first Python framework for RAG services.",
+                    content="SyRAG is a production-first Python framework for RAG services.",
                     score=0.98,
                     metadata={},
                     page_number=1,
                     chunk_index=0,
                 )
             ],
-            prompt="Question: What is FastRAG?",
+            prompt="Question: What is SyRAG?",
             system_prompt="Ground answers in context.",
             require_citations=True,
         )
     )
 
-    assert response.answer == "FastRAG is a Python RAG framework."
+    assert response.answer == "SyRAG is a Python RAG framework."
     assert response.citations[0].source_id == "overview"
     assert response.usage == {
         "prompt_tokens": 11,
@@ -200,9 +200,9 @@ async def test_openai_llm_raises_provider_response_error_for_missing_output_text
     ):
         await provider.generate(
             generation=GenerationRequest(
-                query=QueryRequest(query="What is FastRAG?"),
+                query=QueryRequest(query="What is SyRAG?"),
                 context=[],
-                prompt="Question: What is FastRAG?",
+                prompt="Question: What is SyRAG?",
                 require_citations=False,
             )
         )

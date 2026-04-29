@@ -1,6 +1,6 @@
-from fastrag.observability import ObservabilityHub
-from fastrag.schemas import IngestRequest
-from fastrag.services import DefaultIngestionPipeline
+from syrag.observability import ObservabilityHub
+from syrag.schemas import IngestRequest
+from syrag.services import DefaultIngestionPipeline
 
 
 def test_default_ingestion_pipeline_builds_source_documents() -> None:

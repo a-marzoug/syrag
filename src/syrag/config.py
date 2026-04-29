@@ -26,12 +26,12 @@ class BootstrapSettings(BaseModel):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
-        env_prefix="FASTRAG_",
+        env_prefix="SYRAG_",
         env_nested_delimiter="__",
         extra="ignore",
     )
 
-    app_name: str = Field(default="FastRAG")
+    app_name: str = Field(default="SyRAG")
     app_version: str = Field(default="0.1.0")
     environment: str = Field(default="development")
     host: str = Field(default="127.0.0.1")

@@ -1,6 +1,6 @@
-from fastrag.app import FastRAG, app, create_app
-from fastrag.bootstrap import BootstrapService
-from fastrag.config import (
+from syrag.app import SyRAG, app, create_app
+from syrag.bootstrap import BootstrapService
+from syrag.config import (
     BootstrapSettings,
     ComponentDefaults,
     InMemoryProviderSettings,
@@ -8,11 +8,10 @@ from fastrag.config import (
     Settings,
     get_settings,
 )
-from fastrag.dependencies import ComponentResolver
-from fastrag.errors import (
+from syrag.dependencies import ComponentResolver
+from syrag.errors import (
     ConfigurationError,
     DependencyConfigurationError,
-    FastRAGError,
     PipelineRuntimeError,
     PipelineStageError,
     ProviderError,
@@ -21,10 +20,11 @@ from fastrag.errors import (
     RateLimitExceededError,
     RequestValidationError,
     SafetyGuardError,
+    SyRAGError,
 )
-from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
-from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
-from fastrag.protocols import (
+from syrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
+from syrag.hooks import DefaultRequestContextHook, NoOpAuthHook
+from syrag.protocols import (
     LLM,
     AuthHook,
     Chunker,
@@ -36,7 +36,7 @@ from fastrag.protocols import (
     SafetyGuard,
     VectorStore,
 )
-from fastrag.providers import (
+from syrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryProviderFactory,
@@ -45,14 +45,14 @@ from fastrag.providers import (
     ProviderFactory,
     SQLiteVectorStore,
 )
-from fastrag.registry import (
+from syrag.registry import (
     ComponentAlreadyRegisteredError,
     ComponentNotFoundError,
     ComponentRegistry,
     ComponentValidationError,
     RegistryError,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     AssembledPrompt,
     Citation,
     DocumentChunk,
@@ -66,14 +66,14 @@ from fastrag.schemas import (
     RetrievedDocument,
     SourceDocument,
 )
-from fastrag.services import (
+from syrag.services import (
     DefaultGenerationPolicy,
     DefaultPromptAssembler,
     DefaultRetrievalStrategy,
     RetrievalStrategy,
 )
-from fastrag.structured_logging import JSONLogFormatter, StructuredLogging
-from fastrag.tracing import OpenTelemetryTracing
+from syrag.structured_logging import JSONLogFormatter, StructuredLogging
+from syrag.tracing import OpenTelemetryTracing
 
 __all__ = [
     "ComponentAlreadyRegisteredError",
@@ -97,8 +97,8 @@ __all__ = [
     "DocumentChunk",
     "DefaultRetrievalStrategy",
     "Embedder",
-    "FastRAGError",
-    "FastRAG",
+    "SyRAGError",
+    "SyRAG",
     "GenerationPolicy",
     "GenerationRequest",
     "InMemoryProviderSettings",
@@ -146,7 +146,7 @@ __all__ = [
 ]
 
 try:
-    from fastrag.providers.openai import OpenAIEmbedder, OpenAILLM
+    from syrag.providers.openai import OpenAIEmbedder, OpenAILLM
 except ModuleNotFoundError:
     pass
 else:
@@ -159,7 +159,7 @@ else:
     __all__.extend(["OpenAIEmbedder", "OpenAILLM"])
 
 try:
-    from fastrag.testing import (
+    from syrag.testing import (
         EmbedCall,
         FakeChunker,
         FakeEmbedder,

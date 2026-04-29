@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Protocol
 
-from fastrag.errors import PipelineStageError
-from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import Chunker, Embedder, VectorStore
-from fastrag.schemas import IngestRequest, IngestResponse, SourceDocument
+from syrag.errors import PipelineStageError
+from syrag.observability import ObservabilityHub, PipelineEvent
+from syrag.protocols import Chunker, Embedder, VectorStore
+from syrag.schemas import IngestRequest, IngestResponse, SourceDocument
 
 
 class IngestionPipeline(Protocol):

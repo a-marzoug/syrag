@@ -1,12 +1,12 @@
-# FastRAG Docs
+# SyRAG Docs
 
-FastRAG is a production-first Python framework for building Retrieval-Augmented Generation (RAG) services with a FastAPI-like developer experience.
+SyRAG is a production-first Python framework for building Retrieval-Augmented Generation (RAG) services with a FastAPI-like developer experience.
 
 This documentation set describes the framework that exists in this repository today. It focuses on the public API, current architectural boundaries, and shipped extension points.
 
 ## Reading Guide
 
-- [Product Overview](./overview.md): What FastRAG ships, who it serves, and where it draws the line.
+- [Product Overview](./overview.md): What SyRAG ships, who it serves, and where it draws the line.
 - [Architecture](./architecture.md): Current runtime structure, request flow, and packaging boundaries.
 - [Component Contracts](./component-contracts.md): The protocol-first extension points that applications and providers rely on.
 - [MVP Status](./mvp-roadmap.md): What is implemented now and what remains intentionally out of scope.

@@ -1,16 +1,16 @@
 import pytest
 
-from fastrag.protocols import LLM, Embedder, VectorStore
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import DocumentChunk, GenerationRequest, QueryRequest
+from syrag.protocols import LLM, Embedder, VectorStore
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest
 
 
 @pytest.mark.asyncio
 async def test_in_memory_embedder_is_deterministic() -> None:
     embedder = InMemoryEmbedder(dimensions=8)
 
-    first = await embedder.embed(["FastRAG builds RAG services quickly."])
-    second = await embedder.embed(["FastRAG builds RAG services quickly."])
+    first = await embedder.embed(["SyRAG builds RAG services quickly."])
+    second = await embedder.embed(["SyRAG builds RAG services quickly."])
 
     assert isinstance(embedder, Embedder)
     assert first == second
@@ -23,8 +23,8 @@ async def test_in_memory_vector_store_respects_collection_tenant_and_filters() -
     store = InMemoryVectorStore()
 
     documents = [
-        "FastRAG is a production-first Python framework for RAG services.",
-        "FastAPI powers the HTTP layer for FastRAG.",
+        "SyRAG is a production-first Python framework for RAG services.",
+        "FastAPI powers the HTTP layer for SyRAG.",
     ]
     embeddings = await embedder.embed(documents)
     await store.upsert(
@@ -73,7 +73,7 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
     llm = InMemoryLLM()
 
     documents = [
-        "FastRAG offers a FastAPI-like experience for production RAG services.",
+        "SyRAG offers a FastAPI-like experience for production RAG services.",
         "It emphasizes observability, type safety, and multi-tenancy.",
     ]
     embeddings = await embedder.embed(documents)
@@ -100,7 +100,7 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
         collection="overview",
     )
 
-    query = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+    query = QueryRequest(query="What does SyRAG emphasize?", collection="overview")
     query_embedding = (await embedder.embed([query.query]))[0]
     context = await store.query(
         query_embedding=query_embedding,
@@ -118,7 +118,7 @@ async def test_in_memory_llm_generates_grounded_response_with_citations() -> Non
     )
 
     assert isinstance(llm, LLM)
-    assert "FastRAG" in response.answer
+    assert "SyRAG" in response.answer
     assert len(response.citations) == 2
     assert response.citations[0].source_id == "overview-1"
     assert response.usage["prompt_tokens"] > 0

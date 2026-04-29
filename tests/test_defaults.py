@@ -1,11 +1,11 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.config import ComponentDefaults, Settings
-from fastrag.errors import DependencyConfigurationError
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.schemas import IngestRequest, QueryRequest
+from syrag.app import create_app
+from syrag.config import ComponentDefaults, Settings
+from syrag.errors import DependencyConfigurationError
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.schemas import IngestRequest, QueryRequest
 
 
 @pytest.mark.asyncio
@@ -38,14 +38,14 @@ async def test_routes_can_use_configured_default_component_names() -> None:
         ingest_response = await client.post(
             "/ingest",
             json={
-                "documents": ["FastRAG can resolve registered defaults automatically."],
+                "documents": ["SyRAG can resolve registered defaults automatically."],
                 "collection": "defaults",
                 "metadata": {"source_id": "defaults-doc", "page_number": 1},
             },
         )
         query_response = await client.post(
             "/query",
-            json={"query": "How does FastRAG resolve defaults?", "collection": "defaults"},
+            json={"query": "How does SyRAG resolve defaults?", "collection": "defaults"},
         )
 
     assert ingest_response.status_code == 200

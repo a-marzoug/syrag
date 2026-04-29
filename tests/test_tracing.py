@@ -8,10 +8,10 @@ from typing import cast
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from fastrag.app import create_app
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
-from fastrag.schemas import DocumentChunk, IngestRequest, QueryRequest, SourceDocument
-from fastrag.tracing import OpenTelemetrySpan, OpenTelemetryTracer, OpenTelemetryTracing
+from syrag.app import create_app
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore, PassThroughChunker
+from syrag.schemas import DocumentChunk, IngestRequest, QueryRequest, SourceDocument
+from syrag.tracing import OpenTelemetrySpan, OpenTelemetryTracer, OpenTelemetryTracing
 
 
 @dataclass(slots=True)
@@ -83,7 +83,7 @@ async def test_query_route_emits_request_and_stage_spans() -> None:
 
     embeddings = await embedder.embed(
         [
-            "FastRAG is a production-first Python framework for RAG services.",
+            "SyRAG is a production-first Python framework for RAG services.",
             "It emphasizes observability, type safety, and multi-tenancy.",
         ]
     )
@@ -92,7 +92,7 @@ async def test_query_route_emits_request_and_stage_spans() -> None:
             DocumentChunk(
                 chunk_id="overview-1-chunk-0",
                 source_id="overview-1",
-                content="FastRAG is a production-first Python framework for RAG services.",
+                content="SyRAG is a production-first Python framework for RAG services.",
                 metadata={"source_id": "overview-1", "page_number": 1},
                 page_number=1,
                 chunk_index=0,
@@ -125,29 +125,29 @@ async def test_query_route_emits_request_and_stage_spans() -> None:
     ) as client:
         response = await client.post(
             "/query",
-            json={"query": "What is FastRAG?", "collection": "overview"},
+            json={"query": "What is SyRAG?", "collection": "overview"},
             headers={"x-request-id": "request-123", "x-tenant-id": "tenant-a"},
         )
 
     assert response.status_code == 200
     assert [span.name for span in tracer.spans] == [
-        "fastrag.request",
-        "fastrag.query.embed",
-        "fastrag.query.retrieve",
-        "fastrag.query.assemble",
-        "fastrag.query.policy",
-        "fastrag.query.generate",
+        "syrag.request",
+        "syrag.query.embed",
+        "syrag.query.retrieve",
+        "syrag.query.assemble",
+        "syrag.query.policy",
+        "syrag.query.generate",
     ]
     request_span = tracer.spans[0]
-    assert request_span.attributes["fastrag.request_id"] == "request-123"
-    assert request_span.attributes["fastrag.tenant_id"] == "tenant-a"
+    assert request_span.attributes["syrag.request_id"] == "request-123"
+    assert request_span.attributes["syrag.tenant_id"] == "tenant-a"
     assert request_span.attributes["http.response.status_code"] == 200
     assert request_span.ended is True
 
     for span in tracer.spans[1:]:
-        assert span.parent_name == "fastrag.request"
+        assert span.parent_name == "syrag.request"
         assert span.ended is True
-        assert span.attributes["fastrag.span.kind"] == "stage"
+        assert span.attributes["syrag.span.kind"] == "stage"
 
 
 @pytest.mark.asyncio
@@ -176,7 +176,7 @@ async def test_ingest_route_failure_marks_request_and_stage_spans_as_error() -> 
         transport=ASGITransport(app=app.api),
         base_url="http://testserver",
     ) as client:
-        response = await client.post("/ingest", json={"documents": ["FastRAG doc"]})
+        response = await client.post("/ingest", json={"documents": ["SyRAG doc"]})
 
     assert response.status_code == 500
     request_span = tracer.spans[0]
@@ -184,4 +184,4 @@ async def test_ingest_route_failure_marks_request_and_stage_spans_as_error() -> 
     assert request_span.status_code == "ERROR"
     assert stage_span.status_code == "ERROR"
     assert request_span.attributes["http.response.status_code"] == 500
-    assert stage_span.attributes["fastrag.stage"] == "chunk"
+    assert stage_span.attributes["syrag.stage"] == "chunk"

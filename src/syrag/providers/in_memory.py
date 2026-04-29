@@ -7,8 +7,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from fastrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
-from fastrag.schemas import Citation, DocumentChunk, GenerationRequest, RAGResponse, RetrievedChunk
+from syrag.protocols import LLM, Embedder, EmbeddingVector, Filters, VectorStore
+from syrag.schemas import Citation, DocumentChunk, GenerationRequest, RAGResponse, RetrievedChunk
 
 TOKEN_PATTERN = re.compile(r"\b\w+\b")
 

@@ -8,8 +8,8 @@ from time import monotonic
 
 from starlette.requests import Request
 
-from fastrag.errors import RateLimitExceededError, SafetyGuardError
-from fastrag.schemas import IngestRequest, QueryRequest, RequestContext
+from syrag.errors import RateLimitExceededError, SafetyGuardError
+from syrag.schemas import IngestRequest, QueryRequest, RequestContext
 
 
 class InMemoryRateLimiter:

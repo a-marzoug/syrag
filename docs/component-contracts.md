@@ -2,7 +2,7 @@
 
 ## Why Contracts Matter
 
-FastRAG is built around runtime-checkable protocols. The goal is to let applications replace providers and policy hooks without rewriting route shape or losing observability and error guarantees.
+SyRAG is built around runtime-checkable protocols. The goal is to let applications replace providers and policy hooks without rewriting route shape or losing observability and error guarantees.
 
 Contracts should be:
 
@@ -18,7 +18,7 @@ Every public extension point follows these rules:
 - inputs and outputs are defined with Pydantic models
 - network-bound operations are asynchronous
 - storage and retrieval operations accept collection and tenant context
-- errors are normalized into FastRAG stage-aware exceptions
+- errors are normalized into SyRAG stage-aware exceptions
 
 ## Core Roles
 
@@ -111,7 +111,7 @@ At the framework level, the default path expects grounded responses with citatio
 
 ## Request-Scope Hooks
 
-FastRAG also exposes protocol seams outside the main retrieval/generation path:
+SyRAG also exposes protocol seams outside the main retrieval/generation path:
 
 - `RequestContextHook`
 - `AuthHook`
@@ -125,9 +125,9 @@ These hooks let applications enforce request identity, auth, throttling, and pay
 Applications register concrete providers by name on the app registry, then choose defaults separately:
 
 ```python
-from fastrag import FastRAG, InMemoryEmbedder, Settings
+from syrag import SyRAG, InMemoryEmbedder, Settings
 
-app = FastRAG(
+app = SyRAG(
     title="Support Bot",
     version="0.1.0",
     description="Internal support assistant",
@@ -148,9 +148,9 @@ It does not yet implement plugin discovery.
 
 ## Compatibility Promise
 
-FastRAG keeps a narrow compatibility promise:
+SyRAG keeps a narrow compatibility promise:
 
-- application code depends on FastRAG protocols and schemas
+- application code depends on SyRAG protocols and schemas
 - adapters depend on external provider SDKs
 - switching providers should not require route rewrites
 - operational hooks should compose without changing provider implementations

@@ -54,7 +54,7 @@ all = [
 ]
 
 [project.scripts]
-syrag = "fastrag.main:run"
+syrag = "syrag.main:run"
 
 [dependency-groups]
 dev = [
@@ -67,7 +67,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/fastrag"]
+packages = ["src/syrag"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -87,7 +87,7 @@ exclude = [
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["fastrag"]
+packages = ["syrag"]
 mypy_path = ["src"]
 
 [tool.pytest.ini_options]

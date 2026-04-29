@@ -12,14 +12,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import Receive, Scope, Send
 
-from fastrag.bootstrap import BootstrapService
-from fastrag.config import ComponentDefaults, Settings, get_settings
-from fastrag.dependencies import ComponentResolver
-from fastrag.errors import FastRAGError, RequestValidationError
-from fastrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
-from fastrag.hooks import DefaultRequestContextHook, NoOpAuthHook
-from fastrag.observability import EventListener, ObservabilityHub
-from fastrag.protocols import (
+from syrag.bootstrap import BootstrapService
+from syrag.config import ComponentDefaults, Settings, get_settings
+from syrag.dependencies import ComponentResolver
+from syrag.errors import RequestValidationError, SyRAGError
+from syrag.guardrails import DefaultSafetyGuard, InMemoryRateLimiter
+from syrag.hooks import DefaultRequestContextHook, NoOpAuthHook
+from syrag.observability import EventListener, ObservabilityHub
+from syrag.protocols import (
     LLM,
     AuthHook,
     Chunker,
@@ -31,36 +31,36 @@ from fastrag.protocols import (
     SafetyGuard,
     VectorStore,
 )
-from fastrag.providers import PassThroughChunker, ProviderFactory
-from fastrag.registry import ComponentRegistry
-from fastrag.routing import (
+from syrag.providers import PassThroughChunker, ProviderFactory
+from syrag.registry import ComponentRegistry
+from syrag.routing import (
     IngestHandler,
     QueryHandler,
     build_ingest_decorator,
     build_query_decorator,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     ErrorDetail,
     ErrorResponse,
     IngestRequest,
     QueryRequest,
     RequestContext,
 )
-from fastrag.services import (
+from syrag.services import (
     DefaultGenerationPolicy,
     DefaultPromptAssembler,
     DefaultRetrievalStrategy,
     PipelineService,
     RetrievalStrategy,
 )
-from fastrag.structured_logging import StructuredLogging
-from fastrag.tracing import OpenTelemetryTracer, OpenTelemetryTracing
+from syrag.structured_logging import StructuredLogging
+from syrag.tracing import OpenTelemetryTracer, OpenTelemetryTracing
 
 type ExceptionHandler = Callable[[Request, Exception], Awaitable[Response]]
 type ExceptionHandlerDecorator = Callable[[ExceptionHandler], ExceptionHandler]
 
 
-class FastRAG:
+class SyRAG:
     """Application wrapper exposing a stable framework entry point."""
 
     def __init__(
@@ -109,7 +109,7 @@ class FastRAG:
             openapi_url=openapi_url,
             middleware=middleware,
         )
-        self.api.state.fastrag = self
+        self.api.state.syrag = self
         self.api.state.bootstrap = self.bootstrap
         self.api.state.defaults = self.defaults
         self.api.state.observability = self.observability
@@ -278,7 +278,7 @@ class FastRAG:
         *,
         tracing: OpenTelemetryTracing | None = None,
         tracer: OpenTelemetryTracer | None = None,
-        instrumentation_scope: str = "fastrag",
+        instrumentation_scope: str = "syrag",
     ) -> OpenTelemetryTracing:
         resolved_tracing = tracing or OpenTelemetryTracing(
             tracer=tracer,
@@ -335,7 +335,7 @@ class FastRAG:
         self.api.state.safety_guard = safety_guard
 
     def get_request_context(self, request: Request) -> RequestContext:
-        context = getattr(request.state, "fastrag_context", None)
+        context = getattr(request.state, "syrag_context", None)
         if isinstance(context, RequestContext):
             return context
 
@@ -346,14 +346,14 @@ class FastRAG:
         return self.get_request_context(request).tenant_id
 
     def _register_exception_handlers(self) -> None:
-        @self.api.exception_handler(FastRAGError)
-        async def handle_fastrag_error(
+        @self.api.exception_handler(SyRAGError)
+        async def handle_syrag_error(
             _request: Request,
-            exc: FastRAGError,
+            exc: SyRAGError,
         ) -> JSONResponse:
             return self._build_error_response(exc)
 
-    def _build_error_response(self, exc: FastRAGError) -> JSONResponse:
+    def _build_error_response(self, exc: SyRAGError) -> JSONResponse:
         response = ErrorResponse(
             error=ErrorDetail(
                 code=exc.code,
@@ -387,7 +387,7 @@ class FastRAG:
                             context=context,
                         )
                         await self._enforce_rate_limit(request=request, context=context)
-                    except FastRAGError as exc:
+                    except SyRAGError as exc:
                         response_for_logging = self._build_error_response(exc)
                         self._apply_request_headers(
                             response=response_for_logging,
@@ -415,7 +415,7 @@ class FastRAG:
                     response = await call_next(request)
                     self._apply_request_headers(response=response, context=context)
                     return response
-                except FastRAGError as exc:
+                except SyRAGError as exc:
                     tracing.enrich_request_span(span=request_span, context=context)
                     tracing.record_exception(span=request_span, exception=exc)
                     response = self._build_error_response(exc)
@@ -451,7 +451,7 @@ class FastRAG:
                                     "value": {
                                         "status": "ok",
                                         "environment": "development",
-                                        "service": "FastRAG",
+                                        "service": "SyRAG",
                                     }
                                 }
                             }
@@ -527,7 +527,7 @@ class FastRAG:
             payload_tenant_id=payload.tenant_id,
         )
         if tenant_id != context.tenant_id:
-            request.state.fastrag_context = context.model_copy(update={"tenant_id": tenant_id})
+            request.state.syrag_context = context.model_copy(update={"tenant_id": tenant_id})
         if tenant_id == payload.tenant_id:
             return payload
         return payload.model_copy(update={"tenant_id": tenant_id})
@@ -613,7 +613,7 @@ class FastRAG:
         )
         if resolved_context.request_id is None:
             resolved_context = resolved_context.model_copy(update={"request_id": "unknown"})
-        request.state.fastrag_context = resolved_context
+        request.state.syrag_context = resolved_context
         return resolved_context
 
     async def _enforce_rate_limit(
@@ -639,13 +639,13 @@ def create_app(
     settings: Settings | None = None,
     *,
     provider_factory: ProviderFactory | None = None,
-) -> FastRAG:
+) -> SyRAG:
     resolved_settings = settings or get_settings()
 
-    return FastRAG(
+    return SyRAG(
         title=resolved_settings.app_name,
         version=resolved_settings.app_version,
-        description="Production-first FastRAG application bootstrap.",
+        description="Production-first SyRAG application bootstrap.",
         settings=resolved_settings,
         provider_factory=provider_factory,
     )

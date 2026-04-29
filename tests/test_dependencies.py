@@ -2,12 +2,12 @@ from typing import cast
 
 import pytest
 
-from fastrag.config import ComponentDefaults
-from fastrag.dependencies import ComponentResolver
-from fastrag.errors import DependencyConfigurationError
-from fastrag.protocols import Embedder
-from fastrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
-from fastrag.registry import ComponentRegistry
+from syrag.config import ComponentDefaults
+from syrag.dependencies import ComponentResolver
+from syrag.errors import DependencyConfigurationError
+from syrag.protocols import Embedder
+from syrag.providers import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+from syrag.registry import ComponentRegistry
 
 
 def test_component_resolver_accepts_explicit_component_instances() -> None:

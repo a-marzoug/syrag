@@ -3,7 +3,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from starlette.requests import Request
 
-from fastrag.schemas import (
+from syrag.schemas import (
     AssembledPrompt,
     DocumentChunk,
     GenerationRequest,

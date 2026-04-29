@@ -1,7 +1,7 @@
 import pytest
 
-from fastrag.schemas import IngestRequest, QueryRequest, RetrievedChunk
-from fastrag.testing import (
+from syrag.schemas import IngestRequest, QueryRequest, RetrievedChunk
+from syrag.testing import (
     FakeLLM,
     FakeProviderBundle,
     FakeVectorStore,
@@ -16,7 +16,7 @@ async def test_create_test_app_and_seed_documents_support_query_integration_test
     app = create_test_app()
     await seed_documents(
         app,
-        documents=["FastRAG is a production-first Python framework for RAG services."],
+        documents=["SyRAG is a production-first Python framework for RAG services."],
         collection="overview",
         metadata={"source_id": "overview", "page_number": 1, "topic": "product"},
     )
@@ -29,7 +29,7 @@ async def test_create_test_app_and_seed_documents_support_query_integration_test
         response = await client.post(
             "/query",
             json={
-                "query": "What is FastRAG?",
+                "query": "What is SyRAG?",
                 "collection": "overview",
                 "filters": {"topic": "product"},
             },
@@ -37,7 +37,7 @@ async def test_create_test_app_and_seed_documents_support_query_integration_test
 
     assert response.status_code == 200
     assert response.json()["citations"][0]["source_id"] == "overview"
-    assert "FastRAG is a production-first Python framework" in response.json()["answer"]
+    assert "SyRAG is a production-first Python framework" in response.json()["answer"]
 
 
 @pytest.mark.asyncio
@@ -48,7 +48,7 @@ async def test_fake_providers_record_calls_for_query_tests() -> None:
                 RetrievedChunk(
                     chunk_id="overview-chunk-0",
                     source_id="overview",
-                    content="FastRAG wraps FastAPI for RAG applications.",
+                    content="SyRAG wraps FastAPI for RAG applications.",
                     score=0.99,
                     metadata={"topic": "product"},
                     page_number=1,
@@ -67,15 +67,15 @@ async def test_fake_providers_record_calls_for_query_tests() -> None:
     async with create_test_client(app) as client:
         response = await client.post(
             "/query",
-            json={"query": "What does FastRAG wrap?", "collection": "overview", "top_k": 1},
+            json={"query": "What does SyRAG wrap?", "collection": "overview", "top_k": 1},
         )
 
     assert response.status_code == 200
     assert response.json()["answer"] == "Custom fake answer."
-    assert providers.embedder.calls[0].texts == ["What does FastRAG wrap?"]
+    assert providers.embedder.calls[0].texts == ["What does SyRAG wrap?"]
     assert providers.vector_store.query_calls[0].collection == "overview"
     assert providers.vector_store.query_calls[0].top_k == 1
-    assert providers.llm.calls[0].generation.query.query == "What does FastRAG wrap?"
+    assert providers.llm.calls[0].generation.query.query == "What does SyRAG wrap?"
 
 
 @pytest.mark.asyncio
@@ -92,8 +92,8 @@ async def test_create_test_app_supports_ingest_routes_with_fake_chunker() -> Non
             "/ingest",
             json={
                 "documents": [
-                    "FastRAG exposes query decorators.",
-                    "FastRAG exposes ingest decorators.",
+                    "SyRAG exposes query decorators.",
+                    "SyRAG exposes ingest decorators.",
                 ],
                 "collection": "overview",
                 "metadata": {"source_id": "overview", "page_number": 1},

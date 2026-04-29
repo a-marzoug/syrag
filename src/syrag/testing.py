@@ -6,19 +6,19 @@ from typing import Any, cast
 
 from fastapi import FastAPI
 
-from fastrag._optional import missing_optional_dependency
+from syrag._optional import missing_optional_dependency
 
 try:
     from httpx import ASGITransport, AsyncClient
 except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
     raise missing_optional_dependency(
-        feature="fastrag.testing",
+        feature="syrag.testing",
         extra="testing",
     ) from exc
 
-from fastrag.app import FastRAG, create_app
-from fastrag.config import ComponentDefaults, Settings
-from fastrag.protocols import (
+from syrag.app import SyRAG, create_app
+from syrag.config import ComponentDefaults, Settings
+from syrag.protocols import (
     LLM,
     Chunker,
     Embedder,
@@ -26,7 +26,7 @@ from fastrag.protocols import (
     Filters,
     VectorStore,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     Citation,
     DocumentChunk,
     GenerationRequest,
@@ -258,8 +258,8 @@ def create_test_app(
     settings: Settings | None = None,
     *,
     providers: FakeProviderBundle | None = None,
-) -> FastRAG:
-    """Create a FastRAG app preconfigured with fake providers and defaults."""
+) -> SyRAG:
+    """Create a SyRAG app preconfigured with fake providers and defaults."""
 
     provider_bundle = providers or FakeProviderBundle()
     resolved_settings = settings or Settings()
@@ -284,18 +284,18 @@ def create_test_app(
 
 
 def create_test_client(
-    app: FastRAG | FastAPI,
+    app: SyRAG | FastAPI,
     *,
     base_url: str = "http://testserver",
 ) -> AsyncClient:
-    """Create an HTTPX client configured for a FastRAG or FastAPI ASGI app."""
+    """Create an HTTPX client configured for a SyRAG or FastAPI ASGI app."""
 
-    asgi_app = app.api if isinstance(app, FastRAG) else app
+    asgi_app = app.api if isinstance(app, SyRAG) else app
     return AsyncClient(transport=ASGITransport(app=asgi_app), base_url=base_url)
 
 
 async def seed_documents(
-    app: FastRAG,
+    app: SyRAG,
     *,
     documents: Sequence[str],
     collection: str | None = None,

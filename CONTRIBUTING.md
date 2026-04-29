@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to FastRAG.
+Thanks for contributing to SyRAG.
 
 ## Development setup
 

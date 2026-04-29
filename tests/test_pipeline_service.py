@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from fastrag.protocols import (
+from syrag.protocols import (
     Chunker,
     Embedder,
     EmbeddingVector,
@@ -10,13 +10,13 @@ from fastrag.protocols import (
     PromptAssembler,
     VectorStore,
 )
-from fastrag.providers import (
+from syrag.providers import (
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
     PassThroughChunker,
 )
-from fastrag.schemas import (
+from syrag.schemas import (
     AssembledPrompt,
     GenerationRequest,
     IngestRequest,
@@ -24,7 +24,7 @@ from fastrag.schemas import (
     QueryRequest,
     RetrievedChunk,
 )
-from fastrag.services import PipelineService, RetrievalStrategy
+from syrag.services import PipelineService, RetrievalStrategy
 
 
 class StubIngestionPipeline:
@@ -77,7 +77,7 @@ class StubRetrievalStrategy(RetrievalStrategy):
             RetrievedChunk(
                 chunk_id="overview-0-chunk-0",
                 source_id="overview-0",
-                content="FastRAG emphasizes observability and type safety.",
+                content="SyRAG emphasizes observability and type safety.",
                 score=0.99,
                 metadata={},
                 page_number=1,
@@ -153,7 +153,7 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     ingest_response = await service.run_ingest(
         request=IngestRequest(
             documents=[
-                "FastRAG is a production-first Python framework for RAG services.",
+                "SyRAG is a production-first Python framework for RAG services.",
                 "It emphasizes observability and type safety.",
             ],
             collection="overview",
@@ -165,7 +165,7 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
     )
     query_response = await service.run_query(
         request=QueryRequest(
-            query="What does FastRAG emphasize?",
+            query="What does SyRAG emphasize?",
             collection="overview",
             top_k=2,
         ),
@@ -176,9 +176,9 @@ async def test_pipeline_service_runs_ingest_and_query_flow() -> None:
 
     assert ingest_response.ingested_documents == 2
     assert query_response.citations[0].source_id == "overview-0"
-    assert "FastRAG" in query_response.answer
+    assert "SyRAG" in query_response.answer
     assert query_response.usage["prompt_tokens"] > len(
-        "What does FastRAG emphasize?".split()
+        "What does SyRAG emphasize?".split()
     )
 
 
@@ -214,7 +214,7 @@ async def test_pipeline_service_delegates_query_retrieval_to_retrieval_strategy(
     embedder = InMemoryEmbedder()
     vector_store = InMemoryVectorStore()
     llm = InMemoryLLM()
-    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+    request = QueryRequest(query="What does SyRAG emphasize?", collection="overview")
 
     response = await service.run_query(
         request=request,
@@ -241,7 +241,7 @@ async def test_pipeline_service_delegates_prompt_assembly_to_prompt_assembler() 
     embedder = InMemoryEmbedder()
     vector_store = InMemoryVectorStore()
     llm = InMemoryLLM()
-    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+    request = QueryRequest(query="What does SyRAG emphasize?", collection="overview")
 
     response = await service.run_query(
         request=request,
@@ -267,7 +267,7 @@ async def test_pipeline_service_delegates_generation_policy_to_generation_policy
     embedder = InMemoryEmbedder()
     vector_store = InMemoryVectorStore()
     llm = InMemoryLLM()
-    request = QueryRequest(query="What does FastRAG emphasize?", collection="overview")
+    request = QueryRequest(query="What does SyRAG emphasize?", collection="overview")
 
     response = await service.run_query(
         request=request,

@@ -3,19 +3,19 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from fastrag._optional import missing_optional_dependency
+from syrag._optional import missing_optional_dependency
 
 try:
     import httpx
 except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
     raise missing_optional_dependency(
-        feature="fastrag.providers.openai",
+        feature="syrag.providers.openai",
         extra="openai",
     ) from exc
 
-from fastrag.errors import ProviderRequestError, ProviderResponseError
-from fastrag.protocols import LLM, Embedder
-from fastrag.schemas import Citation, GenerationRequest, RAGResponse, RetrievedChunk
+from syrag.errors import ProviderRequestError, ProviderResponseError
+from syrag.protocols import LLM, Embedder
+from syrag.schemas import Citation, GenerationRequest, RAGResponse, RetrievedChunk
 
 
 class OpenAIEmbedder(Embedder):

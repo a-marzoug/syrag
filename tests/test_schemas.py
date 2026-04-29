@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from fastrag.schemas import Citation, DocumentChunk, IngestRequest, QueryRequest, RAGResponse
+from syrag.schemas import Citation, DocumentChunk, IngestRequest, QueryRequest, RAGResponse
 
 
 def test_ingest_request_requires_at_least_one_document() -> None:
@@ -21,7 +21,7 @@ def test_citation_score_must_stay_in_normalized_range() -> None:
 
 def test_rag_response_preserves_typed_citations() -> None:
     response = RAGResponse(
-        answer="FastRAG wraps FastAPI with framework-oriented primitives.",
+        answer="SyRAG wraps FastAPI with framework-oriented primitives.",
         citations=[
             Citation(
                 source_id="prd",

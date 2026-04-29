@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import FastAPI
 from starlette.requests import Request
 
-from fastrag.protocols import (
+from syrag.protocols import (
     LLM,
     Chunker,
     Embedder,
@@ -13,8 +13,8 @@ from fastrag.protocols import (
     PromptAssembler,
     VectorStore,
 )
-from fastrag.schemas import ErrorResponse, IngestRequest, IngestResponse, QueryRequest, RAGResponse
-from fastrag.services import PipelineService, RetrievalStrategy
+from syrag.schemas import ErrorResponse, IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from syrag.services import PipelineService, RetrievalStrategy
 
 type IngestHandler = Callable[[IngestRequest], IngestRequest | Awaitable[IngestRequest]]
 type QueryHandler = Callable[[QueryRequest], QueryRequest | Awaitable[QueryRequest]]
@@ -39,7 +39,7 @@ def _query_openapi_extra() -> dict[str, Any]:
                         "grounded_query": {
                             "summary": "Tenant-scoped grounded query",
                             "value": {
-                                "query": "What does FastRAG provide for RAG services?",
+                                "query": "What does SyRAG provide for RAG services?",
                                 "collection": "overview",
                                 "tenant_id": "tenant-a",
                                 "top_k": 3,
@@ -64,7 +64,7 @@ def _ingest_openapi_extra() -> dict[str, Any]:
                             "value": {
                                 "documents": [
                                     (
-                                        "FastRAG is a production-first Python framework "
+                                        "SyRAG is a production-first Python framework "
                                         "for RAG services."
                                     ),
                                     "It exposes typed query and ingest routes on top of FastAPI.",
@@ -93,7 +93,7 @@ def _query_responses() -> OpenAPIResponses:
                             "summary": "Answer with citations",
                             "value": {
                                 "answer": (
-                                    "FastRAG provides a production-first Python framework "
+                                    "SyRAG provides a production-first Python framework "
                                     "for building RAG services."
                                 ),
                                 "citations": [
@@ -101,7 +101,7 @@ def _query_responses() -> OpenAPIResponses:
                                         "source_id": "overview",
                                         "score": 0.98,
                                         "snippet": (
-                                            "FastRAG is a production-first Python framework "
+                                            "SyRAG is a production-first Python framework "
                                             "for RAG services."
                                         ),
                                         "page_number": 1,

@@ -1,8 +1,8 @@
 from typing import Any
 
-from fastrag.errors import PipelineStageError
-from fastrag.observability import ObservabilityHub, PipelineEvent
-from fastrag.protocols import (
+from syrag.errors import PipelineStageError
+from syrag.observability import ObservabilityHub, PipelineEvent
+from syrag.protocols import (
     LLM,
     Chunker,
     Embedder,
@@ -10,15 +10,15 @@ from fastrag.protocols import (
     PromptAssembler,
     VectorStore,
 )
-from fastrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
-from fastrag.services.assembly import DefaultPromptAssembler
-from fastrag.services.generation import DefaultGenerationPolicy
-from fastrag.services.ingest import DefaultIngestionPipeline, IngestionPipeline
-from fastrag.services.retrieval import DefaultRetrievalStrategy, RetrievalStrategy
+from syrag.schemas import IngestRequest, IngestResponse, QueryRequest, RAGResponse
+from syrag.services.assembly import DefaultPromptAssembler
+from syrag.services.generation import DefaultGenerationPolicy
+from syrag.services.ingest import DefaultIngestionPipeline, IngestionPipeline
+from syrag.services.retrieval import DefaultRetrievalStrategy, RetrievalStrategy
 
 
 class PipelineService:
-    """Internal orchestrator for FastRAG route execution."""
+    """Internal orchestrator for SyRAG route execution."""
 
     def __init__(
         self,
