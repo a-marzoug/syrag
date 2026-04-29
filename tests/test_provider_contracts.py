@@ -7,6 +7,7 @@ import pytest
 
 from syrag.protocols import LLM, Embedder, VectorStore
 from syrag.providers import (
+    ChromaVectorStore,
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
@@ -17,6 +18,80 @@ from syrag.providers import (
 from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
 
 type AsyncFactory[T] = Callable[[], Awaitable[T]]
+
+
+class FakeChromaCollection:
+    def __init__(self) -> None:
+        self.records: dict[str, dict[str, object]] = {}
+
+    def upsert(
+        self,
+        *,
+        ids: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict[str, object]],
+        documents: list[str],
+    ) -> None:
+        for record_id, embedding, metadata, document in zip(
+            ids,
+            embeddings,
+            metadatas,
+            documents,
+            strict=True,
+        ):
+            self.records[record_id] = {
+                "embedding": embedding,
+                "metadata": metadata,
+                "document": document,
+            }
+
+    def query(
+        self,
+        *,
+        query_embeddings: list[list[float]],
+        n_results: int,
+        where: dict[str, object],
+        include: list[str],
+    ) -> dict[str, object]:
+        del query_embeddings, include
+        matching_records = [
+            (record_id, record)
+            for record_id, record in self.records.items()
+            if self._matches_where(record["metadata"], where)
+        ][:n_results]
+        return {
+            "ids": [[record_id for record_id, _record in matching_records]],
+            "documents": [[str(record["document"]) for _record_id, record in matching_records]],
+            "metadatas": [[record["metadata"] for _record_id, record in matching_records]],
+            "distances": [[0.0 for _record_id, _record in matching_records]],
+        }
+
+    def _matches_where(self, metadata: object, where: dict[str, object]) -> bool:
+        if not isinstance(metadata, dict):
+            return False
+        predicates = where.get("$and")
+        if isinstance(predicates, list):
+            return all(
+                isinstance(predicate, dict)
+                and all(metadata.get(key) == value for key, value in predicate.items())
+                for predicate in predicates
+            )
+        return all(metadata.get(key) == value for key, value in where.items())
+
+
+class FakeChromaClient:
+    def __init__(self) -> None:
+        self.collection = FakeChromaCollection()
+
+    def get_or_create_collection(
+        self,
+        *,
+        name: str,
+        embedding_function: object | None,
+    ) -> FakeChromaCollection:
+        del name
+        assert embedding_function is None
+        return self.collection
 
 
 async def _build_in_memory_embedder() -> Embedder:
@@ -51,6 +126,10 @@ async def _build_in_memory_vector_store() -> VectorStore:
 
 async def _build_sqlite_vector_store(tmp_path: Path) -> VectorStore:
     return SQLiteVectorStore(tmp_path / "provider-contracts.sqlite3")
+
+
+async def _build_chroma_vector_store() -> VectorStore:
+    return ChromaVectorStore(client=FakeChromaClient())
 
 
 async def _build_in_memory_llm() -> LLM:
@@ -110,16 +189,17 @@ async def test_embedder_contract_returns_one_float_vector_per_input(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite"])
+@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite", "chroma"])
 async def test_vector_store_contract_supports_namespace_filters_and_upsert_replacement(
     provider_name: str,
     tmp_path: Path,
 ) -> None:
-    store = (
-        await _build_in_memory_vector_store()
-        if provider_name == "in_memory"
-        else await _build_sqlite_vector_store(tmp_path)
-    )
+    if provider_name == "in_memory":
+        store = await _build_in_memory_vector_store()
+    elif provider_name == "sqlite":
+        store = await _build_sqlite_vector_store(tmp_path)
+    else:
+        store = await _build_chroma_vector_store()
 
     await store.upsert(
         chunks=[

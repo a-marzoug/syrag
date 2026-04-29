@@ -35,6 +35,7 @@ This document now tracks the implemented MVP surface rather than a future releas
 - `InMemoryVectorStore`
 - `InMemoryLLM`
 - `PassThroughChunker`
+- `ChromaVectorStore`
 - `SQLiteVectorStore`
 - `OpenAIEmbedder` and `OpenAILLM` behind the `openai` extra
 

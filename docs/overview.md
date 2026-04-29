@@ -80,6 +80,7 @@ Operational surface:
 Provider surface:
 
 - in-memory embedder, vector store, and LLM
+- Chroma vector store behind the `chroma` extra
 - SQLite-backed vector store
 - OpenAI embedder and LLM behind the `openai` extra
 

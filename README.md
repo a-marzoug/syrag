@@ -10,7 +10,8 @@ It currently ships:
 - `@app.ingest(...)` and `@app.query(...)` decorators
 - typed request and response schemas
 - in-memory providers for local development
-- SQLite and OpenAI provider packages behind optional extras
+- Chroma vector store behind the `chroma` extra
+- SQLite vector store in core and OpenAI providers behind the `openai` extra
 - request context, auth hooks, tenant scoping, rate limiting, and safety guards
 - OpenAPI docs, structured logging, and OpenTelemetry-compatible tracing
 - a testing toolkit with fake providers and ASGI client helpers
@@ -26,6 +27,7 @@ pip install syrag
 Optional integrations:
 
 ```bash
+pip install "syrag[chroma]"
 pip install "syrag[openai]"
 pip install "syrag[testing]"
 pip install "syrag[server]"
@@ -110,6 +112,10 @@ Core:
 - `InMemoryLLM`
 - `PassThroughChunker`
 - `SQLiteVectorStore`
+
+Optional `chroma` extra:
+
+- `ChromaVectorStore`
 
 Optional `openai` extra:
 

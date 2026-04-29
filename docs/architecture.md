@@ -77,6 +77,7 @@ Providers adapt external or internal implementations to SyRAG protocols. First-p
 - `InMemoryVectorStore`
 - `InMemoryLLM`
 - `PassThroughChunker`
+- `ChromaVectorStore` behind the `chroma` extra
 - `SQLiteVectorStore`
 - `OpenAIEmbedder` and `OpenAILLM` behind the `openai` extra
 
@@ -145,6 +146,7 @@ Failures are categorized and serialized consistently:
 The package boundary is explicit:
 
 - core package: framework surface, in-memory providers, SQLite vector store, tracing API integration
+- `chroma` extra: Chroma vector store provider for local vector search and Chroma-backed deployments
 - `openai` extra: OpenAI providers
 - `testing` extra: HTTPX-based test toolkit
 - `server` extra: bundled local server runner dependency

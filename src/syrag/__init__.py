@@ -146,6 +146,14 @@ __all__ = [
 ]
 
 try:
+    from syrag.providers.chroma import ChromaVectorStore
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update({"ChromaVectorStore": ChromaVectorStore})
+    __all__.extend(["ChromaVectorStore"])
+
+try:
     from syrag.providers.openai import OpenAIEmbedder, OpenAILLM
 except ModuleNotFoundError:
     pass

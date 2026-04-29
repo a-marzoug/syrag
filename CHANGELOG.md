@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added typed request, response, document, chunk, citation, and request-context schemas.
 - Added protocol-based extension points for chunking, embedding, vector storage, retrieval, prompt assembly, generation policy, LLM generation, request context, auth, rate limiting, and safety validation.
 - Added in-memory providers for local development and tests.
+- Added optional Chroma vector store provider behind the `chroma` extra.
 - Added `SQLiteVectorStore` for lightweight persistent vector storage.
 - Added optional OpenAI embedder and LLM providers behind the `openai` extra.
 - Added tenant-aware request context and tenant normalization.

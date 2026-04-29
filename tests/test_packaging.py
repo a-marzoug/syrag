@@ -15,6 +15,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert project["name"] == "syrag"
     assert "httpx>=0.28.1" not in dependencies
     assert "uvicorn[standard]>=0.44.0" not in dependencies
+    assert optional_dependencies["chroma"] == ["chromadb>=1.0.0"]
     assert optional_dependencies["openai"] == ["httpx>=0.28.1"]
     assert optional_dependencies["testing"] == ["httpx>=0.28.1"]
     assert optional_dependencies["server"] == ["uvicorn[standard]>=0.44.0"]
@@ -46,6 +47,8 @@ def test_optional_dependency_error_mentions_install_extra() -> None:
 
 
 def test_optional_integrations_are_exported_when_installed() -> None:
+    assert "ChromaVectorStore" in provider_exports
+    assert "ChromaVectorStore" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports
     assert "OpenAIEmbedder" in syrag.__all__
     assert "create_test_client" in syrag.__all__
