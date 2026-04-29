@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to SyRAG will be documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - Unreleased
+
+### Added
+
+- Added the `SyRAG` application wrapper on top of FastAPI.
+- Added typed ingest and query decorators.
+- Added typed request, response, document, chunk, citation, and request-context schemas.
+- Added protocol-based extension points for chunking, embedding, vector storage, retrieval, prompt assembly, generation policy, LLM generation, request context, auth, rate limiting, and safety validation.
+- Added in-memory providers for local development and tests.
+- Added `SQLiteVectorStore` for lightweight persistent vector storage.
+- Added optional OpenAI embedder and LLM providers behind the `openai` extra.
+- Added tenant-aware request context and tenant normalization.
+- Added structured SyRAG error responses with stage and category metadata.
+- Added OpenTelemetry-compatible tracing integration.
+- Added structured logging and JSON log formatting.
+- Added default rate limiting and safety guard implementations.
+- Added OpenAPI examples and documented framework route responses.
+- Added a downstream testing toolkit with fake providers and ASGI client helpers.
+- Added provider contract tests across first-party provider implementations.
+- Added package extras for `openai`, `testing`, `server`, and `all`.
+- Added CI for linting, type checking, tests, package building, and package metadata checks.
+- Added tag-driven PyPI publishing workflow through PyPI Trusted Publishing.
+
+### Changed
+
+- Renamed the public package, import namespace, CLI, and framework branding to `syrag` / `SyRAG` before the first public release.
+- Set supported Python versions to `3.12` and `3.13`.
+
+### Notes
+
+- This is the first planned public release.
