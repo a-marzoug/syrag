@@ -20,16 +20,16 @@ It currently ships:
 Core package:
 
 ```bash
-pip install fastrag
+pip install syrag
 ```
 
 Optional integrations:
 
 ```bash
-pip install "fastrag[openai]"
-pip install "fastrag[testing]"
-pip install "fastrag[server]"
-pip install "fastrag[all]"
+pip install "syrag[openai]"
+pip install "syrag[testing]"
+pip install "syrag[server]"
+pip install "syrag[all]"
 ```
 
 ## Quick Start

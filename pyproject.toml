@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fastrag"
+name = "syrag"
 version = "0.1.0"
 description = "Production-oriented Python framework for building RAG services on top of FastAPI."
 readme = "README.md"
@@ -54,7 +54,7 @@ all = [
 ]
 
 [project.scripts]
-fastrag = "fastrag.main:run"
+syrag = "fastrag.main:run"
 
 [dependency-groups]
 dev = [

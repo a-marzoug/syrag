@@ -12,6 +12,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     dependencies = project["dependencies"]
     optional_dependencies = project["optional-dependencies"]
 
+    assert project["name"] == "syrag"
     assert "httpx>=0.28.1" not in dependencies
     assert "uvicorn[standard]>=0.44.0" not in dependencies
     assert optional_dependencies["openai"] == ["httpx>=0.28.1"]
@@ -40,7 +41,7 @@ def test_optional_dependency_error_mentions_install_extra() -> None:
 
     assert str(error) == (
         "fastrag.testing requires the optional 'testing' extra. "
-        "Install with `pip install fastrag[testing]`."
+        "Install with `pip install syrag[testing]`."
     )
 
 
