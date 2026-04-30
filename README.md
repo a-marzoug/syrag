@@ -36,15 +36,26 @@ pip install "syrag[all]"
 
 ## Quick Start
 
+Install the runtime integrations used in this example:
+
+```bash
+pip install "syrag[chroma,openai,server]"
+```
+
+Set `OPENAI_API_KEY` in your environment before starting the app.
+
 Create `main.py`:
 
 ```python
+import os
+from pathlib import Path
+
 from syrag import (
     SyRAG,
-    InMemoryEmbedder,
-    InMemoryLLM,
-    InMemoryVectorStore,
+    ChromaVectorStore,
     IngestRequest,
+    OpenAIEmbedder,
+    OpenAILLM,
     QueryRequest,
     Settings,
 )
@@ -56,9 +67,21 @@ app = SyRAG(
     settings=Settings(),
 )
 
-app.register_embedder("default", InMemoryEmbedder())
-app.register_vector_store("default", InMemoryVectorStore())
-app.register_llm("default", InMemoryLLM())
+app.register_embedder(
+    "default",
+    OpenAIEmbedder(
+        api_key=os.environ["OPENAI_API_KEY"],
+        model="text-embedding-3-small",
+    ),
+)
+app.register_vector_store(
+    "default",
+    ChromaVectorStore(path=Path(".syrag/chroma"), collection_name="support_docs"),
+)
+app.register_llm(
+    "default",
+    OpenAILLM(api_key=os.environ["OPENAI_API_KEY"], model="gpt-4.1-mini"),
+)
 app.configure_defaults(
     embedder="default",
     vector_store="default",
@@ -179,6 +202,7 @@ Install the `testing` extra to use:
 
 - [Qdrant vector store pipeline](docs/cookbook/qdrant.md)
 - [LangChain + Qdrant RAG](docs/cookbook/langchain.md)
+- [LangChain agent with SyRAG tool](examples/integrations/langchain_syrag_agent.py)
 - [LangGraph + SyRAG RAG workflow](docs/cookbook/langgraph.md)
 - [LlamaIndex + Qdrant RAG](docs/cookbook/llamaindex.md)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import Mapping, Sequence
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
@@ -8,11 +9,12 @@ from uuid import NAMESPACE_URL, uuid5
 from qdrant_client import QdrantClient, models
 
 from syrag import (
+    LLM,
     DocumentChunk,
     Embedder,
     IngestRequest,
-    InMemoryEmbedder,
-    InMemoryLLM,
+    OpenAIEmbedder,
+    OpenAILLM,
     QueryRequest,
     RetrievedChunk,
     Settings,
@@ -20,6 +22,11 @@ from syrag import (
     VectorStore,
 )
 from syrag.protocols import EmbeddingVector
+
+OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+OPENAI_EMBEDDING_DIMENSIONS = 1536
+OPENAI_LLM_MODEL = "gpt-4.1-mini"
+QDRANT_COLLECTION = "support_docs"
 
 
 class QdrantVectorStore(VectorStore):
@@ -129,24 +136,38 @@ class QdrantVectorStore(VectorStore):
         return models.Filter(must=must)
 
 
-async def build_app() -> SyRAG:
-    embedder: Embedder = InMemoryEmbedder(dimensions=16)
-    vector_size = len((await embedder.embed(["dimension probe"]))[0])
-    vector_store = QdrantVectorStore(
-        client=QdrantClient(path=".syrag/qdrant"),
-        collection_name="support_docs",
-        vector_size=vector_size,
+def build_embedder() -> Embedder:
+    return OpenAIEmbedder(
+        api_key=os.environ["OPENAI_API_KEY"],
+        model=OPENAI_EMBEDDING_MODEL,
     )
 
+
+def build_llm() -> LLM:
+    return OpenAILLM(
+        api_key=os.environ["OPENAI_API_KEY"],
+        model=OPENAI_LLM_MODEL,
+    )
+
+
+def build_vector_store() -> VectorStore:
+    return QdrantVectorStore(
+        client=QdrantClient(path=".syrag/qdrant"),
+        collection_name=QDRANT_COLLECTION,
+        vector_size=OPENAI_EMBEDDING_DIMENSIONS,
+    )
+
+
+async def build_app() -> SyRAG:
     syrag = SyRAG(
         title="Support Bot",
         version="0.1.0",
         description="SyRAG backed by Qdrant",
         settings=Settings(),
     )
-    syrag.register_embedder("default", embedder)
-    syrag.register_vector_store("default", vector_store)
-    syrag.register_llm("default", InMemoryLLM())
+    syrag.register_embedder("default", build_embedder())
+    syrag.register_vector_store("default", build_vector_store())
+    syrag.register_llm("default", build_llm())
     syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
 
     @syrag.ingest("/ingest")

@@ -5,6 +5,7 @@ LangChain is useful when you want chains, agents, tools, and runnable compositio
 The most production-friendly pattern is to run SyRAG as a service and call it from LangChain.
 
 The complete LangChain + Qdrant script is available at [`examples/integrations/langchain_qdrant_rag.py`](../../examples/integrations/langchain_qdrant_rag.py).
+The complete LangChain agent script is available at [`examples/integrations/langchain_syrag_agent.py`](../../examples/integrations/langchain_syrag_agent.py).
 
 ## Full LangChain + Qdrant RAG Pipeline
 
@@ -98,102 +99,68 @@ print(answer)
 
 This pipeline is pure LangChain. Use it when you do not need SyRAG’s service boundary, request context, route validation, or framework-level error model.
 
-## Call A SyRAG Query Route From A LangChain Runnable
+## Make SyRAG A LangChain Agent Tool
 
 Install:
 
 ```bash
-pip install "syrag[server]" langchain-core httpx
+pip install "syrag[server]" langchain httpx
 ```
 
-Run a SyRAG app, then call its `/query` route from a LangChain runnable:
+Run a SyRAG app, then expose its `/query` route as a tool the agent can decide to call:
 
 ```python
-from typing import Any
-
 import httpx
-from langchain_core.runnables import RunnableLambda
+from langchain.agents import create_agent
+from langchain.tools import tool
 
 
-async def query_syrag(payload: dict[str, Any]) -> dict[str, Any]:
-    async with httpx.AsyncClient(base_url="http://127.0.0.1:8000") as client:
-        response = await client.post(
+@tool
+def ask_syrag(question: str, collection: str = "support", tenant_id: str | None = None) -> str:
+    """Ask the SyRAG knowledge service for a grounded answer with citations."""
+    with httpx.Client(base_url="http://127.0.0.1:8000") as client:
+        response = client.post(
             "/query",
             json={
-                "query": payload["question"],
-                "collection": payload.get("collection", "support"),
-                "tenant_id": payload.get("tenant_id"),
-                "top_k": payload.get("top_k", 5),
-                "filters": payload.get("filters", {}),
+                "query": question,
+                "collection": collection,
+                "tenant_id": tenant_id,
+                "top_k": 5,
             },
-            headers={
-                "x-tenant-id": payload["tenant_id"],
-            }
-            if payload.get("tenant_id")
-            else None,
+            headers={"x-tenant-id": tenant_id} if tenant_id else None,
         )
         response.raise_for_status()
-        return response.json()
+        payload = response.json()
+        return f"{payload['answer']}\n\nCitations: {payload.get('citations', [])}"
 
 
-syrag_query = RunnableLambda(query_syrag)
+agent = create_agent(
+    model="openai:gpt-4.1-mini",
+    tools=[ask_syrag],
+    system_prompt=(
+        "You are a support agent. Use ask_syrag for questions about the private "
+        "knowledge base. Do not answer private-knowledge questions from memory."
+    ),
+)
 
-result = await syrag_query.ainvoke(
+result = agent.invoke(
     {
-        "question": "What does our refund policy say?",
-        "collection": "support",
-        "tenant_id": "tenant-a",
-        "top_k": 3,
+        "messages": [
+            {
+                "role": "user",
+                "content": (
+                    "Use the support collection for tenant-a. "
+                    "What does SyRAG provide?"
+                ),
+            }
+        ]
     }
 )
 
-print(result["answer"])
+print(result["messages"][-1].content)
 ```
 
-This keeps SyRAG responsible for retrieval, generation, citations, request IDs, tenant handling, and error normalization. LangChain remains the orchestration layer around that service call.
-
-## Wrap A SyRAG Embedder For LangChain
-
-Use this when you want a SyRAG embedder implementation to power a LangChain vector store.
-
-```python
-import asyncio
-from collections.abc import Sequence
-
-from langchain_core.embeddings import Embeddings
-from syrag import Embedder, InMemoryEmbedder
-
-
-class SyRAGLangChainEmbeddings(Embeddings):
-    def __init__(self, embedder: Embedder) -> None:
-        self.embedder = embedder
-
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return _run_async(self.embedder.embed(texts))
-
-    def embed_query(self, text: str) -> list[float]:
-        return self.embed_documents([text])[0]
-
-    async def aembed_documents(self, texts: list[str]) -> list[list[float]]:
-        return await self.embedder.embed(texts)
-
-    async def aembed_query(self, text: str) -> list[float]:
-        return (await self.aembed_documents([text]))[0]
-
-
-def _run_async(awaitable: object) -> object:
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(awaitable)  # type: ignore[arg-type]
-    msg = "Use aembed_documents() or aembed_query() inside an active event loop."
-    raise RuntimeError(msg)
-
-
-embeddings = SyRAGLangChainEmbeddings(InMemoryEmbedder())
-```
-
-Then pass `embeddings` to any LangChain vector store that accepts an `Embeddings` implementation.
+This keeps SyRAG responsible for retrieval, generation, citations, request IDs, tenant handling, and error normalization. LangChain remains the agent orchestration layer.
 
 ## Convert LangChain Documents For SyRAG Ingest
 

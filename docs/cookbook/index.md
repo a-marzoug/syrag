@@ -13,7 +13,7 @@ The cookbook shows how SyRAG fits into real application stacks. These recipes ar
 
 Use SyRAG in one of three ways:
 
-- As the service boundary: expose `/ingest` and `/query`, then call SyRAG from another framework over HTTP.
+- As the service boundary: expose `/ingest` and `/query`, then call SyRAG from another framework over HTTP or as an agent tool.
 - As the provider layer: reuse SyRAG embedders, vector stores, or LLM adapters inside another framework.
 - As the application shell: keep SyRAG routes and lifecycle, but register providers that wrap another framework.
 

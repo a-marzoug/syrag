@@ -108,17 +108,18 @@ async def ingest_directory(
 
 This is a good bridge when you like LlamaIndex loaders but want SyRAG to handle serving, observability, and request-level behavior.
 
-## Wrap A SyRAG Embedder For LlamaIndex
+## Wrap A SyRAG OpenAI Embedder For LlamaIndex
 
 Use this when you want LlamaIndex indexes to use the same embedding implementation as your SyRAG app.
 
 ```python
 import asyncio
+import os
 from typing import Any
 
 from llama_index.core.bridge.pydantic import PrivateAttr
 from llama_index.core.embeddings import BaseEmbedding
-from syrag import Embedder, InMemoryEmbedder
+from syrag import Embedder, OpenAIEmbedder
 
 
 class SyRAGLlamaIndexEmbedding(BaseEmbedding):
@@ -157,7 +158,12 @@ def _run_async(awaitable: object) -> object:
     raise RuntimeError(msg)
 
 
-embed_model = SyRAGLlamaIndexEmbedding(InMemoryEmbedder())
+embed_model = SyRAGLlamaIndexEmbedding(
+    OpenAIEmbedder(
+        api_key=os.environ["OPENAI_API_KEY"],
+        model="text-embedding-3-small",
+    )
+)
 ```
 
 Use it with a LlamaIndex index:

@@ -1,8 +1,11 @@
+import os
+from pathlib import Path
+
 from syrag import (
+    ChromaVectorStore,
     IngestRequest,
-    InMemoryEmbedder,
-    InMemoryLLM,
-    InMemoryVectorStore,
+    OpenAIEmbedder,
+    OpenAILLM,
     QueryRequest,
     Settings,
     SyRAG,
@@ -15,9 +18,21 @@ syrag = SyRAG(
     settings=Settings(),
 )
 
-syrag.register_embedder("default", InMemoryEmbedder())
-syrag.register_vector_store("default", InMemoryVectorStore())
-syrag.register_llm("default", InMemoryLLM())
+syrag.register_embedder(
+    "default",
+    OpenAIEmbedder(
+        api_key=os.environ["OPENAI_API_KEY"],
+        model="text-embedding-3-small",
+    ),
+)
+syrag.register_vector_store(
+    "default",
+    ChromaVectorStore(path=Path(".syrag/chroma"), collection_name="support_docs"),
+)
+syrag.register_llm(
+    "default",
+    OpenAILLM(api_key=os.environ["OPENAI_API_KEY"], model="gpt-4.1-mini"),
+)
 syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
 
 
