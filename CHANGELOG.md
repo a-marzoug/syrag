@@ -24,6 +24,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added OpenAPI examples and documented framework route responses.
 - Added a downstream testing toolkit with fake providers and ASGI client helpers.
 - Added provider contract tests across first-party provider implementations.
+- Added cookbook documentation for LangChain and LlamaIndex integration patterns.
 - Added package extras for `openai`, `testing`, `server`, and `all`.
 - Added CI for linting, type checking, tests, package building, and package metadata checks.
 - Added tag-driven PyPI publishing workflow through PyPI Trusted Publishing.

@@ -166,6 +166,7 @@ Install the `testing` extra to use:
 - [Overview](docs/overview.md)
 - [Architecture](docs/architecture.md)
 - [Component contracts](docs/component-contracts.md)
+- [Cookbook](docs/cookbook/index.md)
 - [Provider examples](docs/provider-examples.md)
 - [Releasing](docs/releasing.md)
 - [MVP status](docs/mvp-roadmap.md)
