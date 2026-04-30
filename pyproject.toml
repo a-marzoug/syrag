@@ -94,6 +94,7 @@ python_version = "3.12"
 strict = true
 packages = ["syrag"]
 mypy_path = ["src"]
+exclude = ["^examples/integrations/"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

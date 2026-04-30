@@ -174,3 +174,12 @@ Install the `testing` extra to use:
 ## Examples
 
 - [Minimal app](examples/minimal_app.py)
+
+## Cookbook
+
+- [Qdrant vector store pipeline](docs/cookbook/qdrant.md)
+- [LangChain + Qdrant RAG](docs/cookbook/langchain.md)
+- [LangGraph + SyRAG RAG workflow](docs/cookbook/langgraph.md)
+- [LlamaIndex + Qdrant RAG](docs/cookbook/llamaindex.md)
+
+Full example scripts live in [examples/integrations](examples/integrations).

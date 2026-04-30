@@ -4,6 +4,69 @@ LlamaIndex is strong for data connectors, indexing workflows, and query engines.
 
 The cleanest production pattern is to let LlamaIndex prepare or retrieve data when needed, while SyRAG owns the API boundary.
 
+The complete LlamaIndex + Qdrant script is available at [`examples/integrations/llamaindex_qdrant_rag.py`](../../examples/integrations/llamaindex_qdrant_rag.py).
+
+## Full LlamaIndex + Qdrant RAG Pipeline
+
+Use this when LlamaIndex owns ingestion, indexing, and query execution while Qdrant stores vectors.
+
+Install:
+
+```bash
+pip install llama-index llama-index-vector-stores-qdrant llama-index-embeddings-openai qdrant-client
+```
+
+Create `llamaindex_qdrant_rag.py`:
+
+```python
+import os
+
+from llama_index.core import Document, Settings, StorageContext, VectorStoreIndex
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
+
+
+Settings.embed_model = OpenAIEmbedding(
+    model="text-embedding-3-small",
+    api_key=os.environ["OPENAI_API_KEY"],
+)
+Settings.llm = OpenAI(
+    model="gpt-4.1-mini",
+    api_key=os.environ["OPENAI_API_KEY"],
+)
+
+client = QdrantClient(path=".syrag/llamaindex-qdrant")
+vector_store = QdrantVectorStore(
+    client=client,
+    collection_name="support_docs",
+)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+documents = [
+    Document(
+        text="SyRAG exposes typed ingest and query routes for RAG services.",
+        metadata={"source": "overview", "topic": "api"},
+    ),
+    Document(
+        text="Qdrant stores vectors and payloads for semantic retrieval.",
+        metadata={"source": "qdrant", "topic": "vector-store"},
+    ),
+]
+
+index = VectorStoreIndex.from_documents(
+    documents,
+    storage_context=storage_context,
+)
+query_engine = index.as_query_engine(similarity_top_k=3)
+
+response = query_engine.query("What does SyRAG expose?")
+print(response)
+```
+
+This pipeline is pure LlamaIndex. Use it for experiments, data-heavy indexing workflows, or when LlamaIndex query engines are the application boundary.
+
 ## Send LlamaIndex Documents To SyRAG
 
 Install:
