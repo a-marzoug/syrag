@@ -140,3 +140,5 @@ async def ingest(request: IngestRequest) -> IngestRequest:
 async def query(request: QueryRequest) -> QueryRequest:
     return request
 ```
+
+See [Provider Examples](./provider-examples.md) for Chroma, SQLite, and OpenAI setup.

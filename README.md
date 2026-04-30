@@ -36,6 +36,8 @@ pip install "syrag[all]"
 
 ## Quick Start
 
+Create `main.py`:
+
 ```python
 from syrag import (
     SyRAG,
@@ -86,6 +88,22 @@ The framework exposes:
 - `POST /query`
 - `GET /health`
 - OpenAPI docs at `/docs`
+
+Ingest a document:
+
+```bash
+curl -X POST http://127.0.0.1:8000/ingest \
+  -H "content-type: application/json" \
+  -d '{"documents":["SyRAG builds typed RAG services."],"collection":"demo"}'
+```
+
+Query it:
+
+```bash
+curl -X POST http://127.0.0.1:8000/query \
+  -H "content-type: application/json" \
+  -d '{"query":"What does SyRAG build?","collection":"demo","top_k":1}'
+```
 
 ## Extension Points
 
@@ -148,4 +166,10 @@ Install the `testing` extra to use:
 - [Overview](docs/overview.md)
 - [Architecture](docs/architecture.md)
 - [Component contracts](docs/component-contracts.md)
+- [Provider examples](docs/provider-examples.md)
+- [Releasing](docs/releasing.md)
 - [MVP status](docs/mvp-roadmap.md)
+
+## Examples
+
+- [Minimal app](examples/minimal_app.py)

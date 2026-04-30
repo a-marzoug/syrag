@@ -9,6 +9,8 @@ This documentation set describes the framework that exists in this repository to
 - [Product Overview](./overview.md): What SyRAG ships, who it serves, and where it draws the line.
 - [Architecture](./architecture.md): Current runtime structure, request flow, and packaging boundaries.
 - [Component Contracts](./component-contracts.md): The protocol-first extension points that applications and providers rely on.
+- [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, SQLite, and OpenAI.
+- [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.
 - [MVP Status](./mvp-roadmap.md): What is implemented now and what remains intentionally out of scope.
 
 ## Current Status
