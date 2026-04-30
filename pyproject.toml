@@ -12,7 +12,7 @@ authors = [
     { name = "A. Marzoug" },
 ]
 requires-python = ">=3.12,<3.14"
-urls = { Repository = "https://github.com/a-marzoug/fastrag", Issues = "https://github.com/a-marzoug/fastrag/issues", Documentation = "https://github.com/a-marzoug/fastrag/tree/main/docs" }
+urls = { Repository = "https://github.com/a-marzoug/syrag", Issues = "https://github.com/a-marzoug/syrag/issues", Documentation = "https://github.com/a-marzoug/syrag/tree/main/docs" }
 keywords = [
     "rag",
     "retrieval-augmented-generation",

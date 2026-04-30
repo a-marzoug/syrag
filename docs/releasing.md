@@ -7,7 +7,7 @@ SyRAG uses a tag-driven release flow. Publishing should happen from CI, not from
 Before the first release, configure PyPI Trusted Publishing for:
 
 - PyPI project: `syrag`
-- GitHub owner/repository: `a-marzoug/fastrag`
+- GitHub owner/repository: `a-marzoug/syrag`
 - Workflow file: `.github/workflows/publish.yml`
 
 The workflow publishes when a version tag such as `v0.1.0` is pushed. It does not require a long-lived PyPI API token.

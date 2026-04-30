@@ -29,9 +29,9 @@ def test_pyproject_declares_release_metadata() -> None:
     assert project["authors"] == [{"name": "A. Marzoug"}]
     assert project["requires-python"] == ">=3.12,<3.14"
     assert project["urls"] == {
-        "Repository": "https://github.com/a-marzoug/fastrag",
-        "Issues": "https://github.com/a-marzoug/fastrag/issues",
-        "Documentation": "https://github.com/a-marzoug/fastrag/tree/main/docs",
+        "Repository": "https://github.com/a-marzoug/syrag",
+        "Issues": "https://github.com/a-marzoug/syrag/issues",
+        "Documentation": "https://github.com/a-marzoug/syrag/tree/main/docs",
     }
     assert "Programming Language :: Python :: 3.12" in project["classifiers"]
     assert "Programming Language :: Python :: 3.13" in project["classifiers"]
