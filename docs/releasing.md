@@ -4,13 +4,19 @@ SyRAG uses a tag-driven release flow. Publishing should happen from CI, not from
 
 ## One-Time PyPI Setup
 
-Before the first release, configure PyPI Trusted Publishing for:
+Before the first release, configure a PyPI Trusted Publisher. If the `syrag` project does not exist on PyPI yet, use a pending publisher from your account publishing settings. If it already exists under your account, add the publisher from the project publishing settings.
 
-- PyPI project: `syrag`
-- GitHub owner/repository: `a-marzoug/syrag`
-- Workflow file: `.github/workflows/publish.yml`
+Use these values:
+
+- PyPI project name: `syrag`
+- Owner: `a-marzoug`
+- Repository name: `syrag`
+- Workflow name: `publish.yml`
+- Environment name: leave blank
 
 The workflow publishes when a version tag such as `v0.1.0` is pushed. It does not require a long-lived PyPI API token.
+
+PyPI calls this Trusted Publishing. It uses GitHub Actions OpenID Connect, so the workflow must keep `id-token: write` permission on the publish job.
 
 ## Release Checklist
 
@@ -26,16 +32,17 @@ uv build
 uvx twine check dist/*
 ```
 
-1. Commit the release changes.
-2. Create and push a version tag:
+4. Commit the release changes.
+5. Make sure the PyPI Trusted Publisher is configured.
+6. Create and push a version tag:
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-1. Confirm the `Publish` GitHub Actions workflow completed successfully.
-2. Install the published package in a clean environment and run a smoke test:
+7. Confirm the `Publish` GitHub Actions workflow completed successfully.
+8. Install the published package in a clean environment and run a smoke test:
 
 ```bash
 python -m venv /tmp/syrag-smoke
