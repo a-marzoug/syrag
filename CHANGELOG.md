@@ -25,7 +25,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added a downstream testing toolkit with fake providers and ASGI client helpers.
 - Added provider contract tests across first-party provider implementations.
 - Added cookbook documentation for Qdrant, LangChain, LangGraph, and LlamaIndex RAG integration patterns.
-- Added package extras for `openai`, `testing`, `server`, and `all`.
+- Added package extras for `chroma`, `openai`, `testing`, `server`, and `all`.
+- Added a minimal OpenAI and Chroma-backed application example.
+- Added release, contribution, security, and community documentation for open-source use.
 - Added CI for linting, type checking, tests, package building, and package metadata checks.
 - Added tag-driven PyPI publishing workflow through PyPI Trusted Publishing.
 
@@ -33,6 +35,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Renamed the public package, import namespace, CLI, and framework branding to `syrag` / `SyRAG` before the first public release.
 - Set supported Python versions to `3.12` and `3.13`.
+- Updated first-time-user documentation to use OpenAI-backed generation and embeddings with a local vector store.
 
 ### Notes
 
