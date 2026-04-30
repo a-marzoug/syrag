@@ -13,3 +13,8 @@ wheels/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+
+# Local agent/editor metadata
+.codex
+.codex/
+.gemini/
