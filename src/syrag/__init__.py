@@ -1,3 +1,5 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from syrag.app import SyRAG, app, create_app
 from syrag.bootstrap import BootstrapService
 from syrag.config import (
@@ -75,6 +77,11 @@ from syrag.services import (
 from syrag.structured_logging import JSONLogFormatter, StructuredLogging
 from syrag.tracing import OpenTelemetryTracing
 
+try:
+    __version__ = version("syrag")
+except PackageNotFoundError:  # pragma: no cover - only occurs from an unpackaged source tree
+    __version__ = "0.1.0"
+
 __all__ = [
     "ComponentAlreadyRegisteredError",
     "ComponentNotFoundError",
@@ -140,6 +147,7 @@ __all__ = [
     "StructuredLogging",
     "SafetyGuard",
     "VectorStore",
+    "__version__",
     "app",
     "create_app",
     "get_settings",

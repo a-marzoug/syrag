@@ -25,6 +25,7 @@ def test_pyproject_declares_release_metadata() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     project = pyproject["project"]
 
+    assert syrag.__version__ == project["version"]
     assert project["license"] == "Apache-2.0"
     assert project["authors"] == [{"name": "A. Marzoug"}]
     assert project["requires-python"] == ">=3.12,<3.14"
@@ -47,6 +48,7 @@ def test_optional_dependency_error_mentions_install_extra() -> None:
 
 
 def test_optional_integrations_are_exported_when_installed() -> None:
+    assert "__version__" in syrag.__all__
     assert "ChromaVectorStore" in provider_exports
     assert "ChromaVectorStore" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports

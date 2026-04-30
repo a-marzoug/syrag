@@ -47,7 +47,7 @@ git push origin v0.1.0
 ```bash
 python -m venv /tmp/syrag-smoke
 /tmp/syrag-smoke/bin/python -m pip install syrag
-/tmp/syrag-smoke/bin/python -c "import syrag; print(syrag.__version__)"
+/tmp/syrag-smoke/bin/python -c "import importlib.metadata, syrag; print(importlib.metadata.version('syrag')); print(syrag.SyRAG.__name__)"
 ```
 
 ## TestPyPI
