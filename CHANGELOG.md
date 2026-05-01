@@ -4,6 +4,13 @@ All notable changes to SyRAG will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added optional FAISS vector store provider behind the `faiss` extra.
+- Added optional Google Gen AI embedder and LLM providers behind the `google` extra.
+
 ## [0.1.0] - 2026-04-30
 
 ### Added

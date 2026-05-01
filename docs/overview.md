@@ -81,7 +81,9 @@ Provider surface:
 
 - in-memory development/test providers
 - Chroma vector store behind the `chroma` extra
+- FAISS vector store behind the `faiss` extra
 - SQLite-backed vector store
+- Google embedder and LLM behind the `google` extra
 - OpenAI embedder and LLM behind the `openai` extra
 
 Testing surface:
@@ -140,4 +142,4 @@ async def query(request: QueryRequest) -> QueryRequest:
     return request
 ```
 
-See [Provider Examples](./provider-examples.md) for Chroma, SQLite, and OpenAI setup.
+See [Provider Examples](./provider-examples.md) for Chroma, FAISS, SQLite, OpenAI, and Google setup.

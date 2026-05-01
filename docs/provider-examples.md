@@ -37,6 +37,37 @@ vector_store = ChromaVectorStore(
 llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
 ```
 
+## FAISS Local Vector Store
+
+Use FAISS when you want a specialized local vector index without running a vector database service. SyRAG's FAISS adapter keeps metadata in process and rebuilds the local index on upserts, so use it for local apps, prototypes, and small deployments before moving to a durable remote vector database.
+
+Install:
+
+```bash
+pip install "syrag[faiss,openai]"
+```
+
+Configure:
+
+```python
+import os
+
+from syrag import FAISSVectorStore, OpenAIEmbedder, OpenAILLM, Settings, SyRAG
+
+api_key = os.environ["OPENAI_API_KEY"]
+
+syrag = SyRAG(
+    title="Support Bot",
+    version="0.1.0",
+    description="FAISS-backed SyRAG app",
+    settings=Settings(),
+)
+
+embedder = OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small")
+vector_store = FAISSVectorStore(dimensions=1536)
+llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
+```
+
 ## SQLite Vector Store
 
 Use SQLite when you want a lightweight persistent store with no extra vector database dependency. It is useful for demos, small local projects, and tests that need data to survive process restarts. For production vector search, prefer Chroma, Qdrant, or another vector database.
@@ -96,6 +127,41 @@ vector_store = ChromaVectorStore(
 llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
 ```
 
+## Google Embedder And LLM
+
+Use Google when you want Gemini embeddings and generation through the Google Gen AI SDK. Use `api_key` for the Gemini Developer API, or configure `vertexai=True` with a Google Cloud project and location for Vertex AI.
+
+Install:
+
+```bash
+pip install "syrag[google,chroma]"
+```
+
+Configure:
+
+```python
+import os
+from pathlib import Path
+
+from syrag import ChromaVectorStore, GoogleEmbedder, GoogleLLM, Settings, SyRAG
+
+api_key = os.environ["GOOGLE_API_KEY"]
+
+syrag = SyRAG(
+    title="Support Bot",
+    version="0.1.0",
+    description="Google-backed SyRAG app",
+    settings=Settings(),
+)
+
+embedder = GoogleEmbedder(api_key=api_key, model="gemini-embedding-001")
+vector_store = ChromaVectorStore(
+    path=Path(".syrag/chroma"),
+    collection_name="support_docs",
+)
+llm = GoogleLLM(api_key=api_key, model="gemini-2.5-flash")
+```
+
 ## In-Memory Providers
 
 Use in-memory providers for tests, examples that should not call external services, and framework development.
@@ -124,10 +190,10 @@ from syrag import IngestRequest, QueryRequest
 
 @syrag.ingest("/ingest")
 async def ingest(request: IngestRequest) -> IngestRequest:
-    return request
+    return request.model_copy(update={"collection": request.collection or "support"})
 
 
 @syrag.query("/query")
 async def query(request: QueryRequest) -> QueryRequest:
-    return request
+    return request.model_copy(update={"collection": request.collection or "support"})
 ```

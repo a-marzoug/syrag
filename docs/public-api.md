@@ -58,6 +58,8 @@ These components are available as first-party utilities:
 Optional provider exports are available only when their extras are installed:
 
 - `ChromaVectorStore` with `syrag[chroma]`
+- `FAISSVectorStore` with `syrag[faiss]`
+- `GoogleEmbedder` and `GoogleLLM` with `syrag[google]`
 - `OpenAIEmbedder` and `OpenAILLM` with `syrag[openai]`
 
 Testing helpers are available when `syrag[testing]` is installed.

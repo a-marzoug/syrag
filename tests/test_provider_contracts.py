@@ -1,6 +1,7 @@
 import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -8,6 +9,9 @@ import pytest
 from syrag.protocols import LLM, Embedder, VectorStore
 from syrag.providers import (
     ChromaVectorStore,
+    FAISSVectorStore,
+    GoogleEmbedder,
+    GoogleLLM,
     InMemoryEmbedder,
     InMemoryLLM,
     InMemoryVectorStore,
@@ -94,6 +98,45 @@ class FakeChromaClient:
         return self.collection
 
 
+class FakeGoogleModels:
+    async def embed_content(
+        self,
+        *,
+        model: str,
+        contents: list[str],
+        config: object | None,
+    ) -> SimpleNamespace:
+        del model, config
+        return SimpleNamespace(
+            embeddings=[
+                SimpleNamespace(values=[float(index + 1), float(len(text)), 0.5])
+                for index, text in enumerate(contents)
+            ]
+        )
+
+    async def generate_content(
+        self,
+        *,
+        model: str,
+        contents: str,
+        config: object | None,
+    ) -> SimpleNamespace:
+        del model, contents, config
+        return SimpleNamespace(
+            text="SyRAG contract answer.",
+            usage_metadata=SimpleNamespace(
+                prompt_token_count=12,
+                candidates_token_count=4,
+                total_token_count=16,
+            ),
+        )
+
+
+class FakeGoogleClient:
+    def __init__(self) -> None:
+        self.aio = SimpleNamespace(models=FakeGoogleModels())
+
+
 async def _build_in_memory_embedder() -> Embedder:
     return InMemoryEmbedder(dimensions=8)
 
@@ -120,6 +163,10 @@ async def _build_openai_embedder() -> Embedder:
     )
 
 
+async def _build_google_embedder() -> Embedder:
+    return GoogleEmbedder(client=FakeGoogleClient(), model="gemini-embedding-001")
+
+
 async def _build_in_memory_vector_store() -> VectorStore:
     return InMemoryVectorStore()
 
@@ -130,6 +177,10 @@ async def _build_sqlite_vector_store(tmp_path: Path) -> VectorStore:
 
 async def _build_chroma_vector_store() -> VectorStore:
     return ChromaVectorStore(client=FakeChromaClient())
+
+
+async def _build_faiss_vector_store() -> VectorStore:
+    return FAISSVectorStore(dimensions=2)
 
 
 async def _build_in_memory_llm() -> LLM:
@@ -163,12 +214,17 @@ async def _build_openai_llm() -> LLM:
     )
 
 
+async def _build_google_llm() -> LLM:
+    return GoogleLLM(client=FakeGoogleClient(), model="gemini-2.5-flash")
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("provider_name", "factory"),
     [
         ("in_memory", _build_in_memory_embedder),
         ("openai", _build_openai_embedder),
+        ("google", _build_google_embedder),
     ],
 )
 async def test_embedder_contract_returns_one_float_vector_per_input(
@@ -189,7 +245,7 @@ async def test_embedder_contract_returns_one_float_vector_per_input(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite", "chroma"])
+@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite", "chroma", "faiss"])
 async def test_vector_store_contract_supports_namespace_filters_and_upsert_replacement(
     provider_name: str,
     tmp_path: Path,
@@ -198,8 +254,10 @@ async def test_vector_store_contract_supports_namespace_filters_and_upsert_repla
         store = await _build_in_memory_vector_store()
     elif provider_name == "sqlite":
         store = await _build_sqlite_vector_store(tmp_path)
-    else:
+    elif provider_name == "chroma":
         store = await _build_chroma_vector_store()
+    else:
+        store = await _build_faiss_vector_store()
 
     await store.upsert(
         chunks=[
@@ -285,6 +343,7 @@ async def test_vector_store_contract_supports_namespace_filters_and_upsert_repla
     [
         ("in_memory", _build_in_memory_llm),
         ("openai", _build_openai_llm),
+        ("google", _build_google_llm),
     ],
 )
 async def test_llm_contract_returns_answer_usage_and_optional_citations(

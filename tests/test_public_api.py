@@ -65,5 +65,8 @@ def test_optional_provider_exports_are_available_in_dev_environment() -> None:
     exports = set(syrag.__all__)
 
     assert "ChromaVectorStore" in exports
+    assert "FAISSVectorStore" in exports
+    assert "GoogleEmbedder" in exports
+    assert "GoogleLLM" in exports
     assert "OpenAIEmbedder" in exports
     assert "OpenAILLM" in exports

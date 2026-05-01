@@ -22,6 +22,14 @@ else:
     __all__.extend(["ChromaVectorStore"])
 
 try:
+    from syrag.providers.faiss import FAISSVectorStore
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update({"FAISSVectorStore": FAISSVectorStore})
+    __all__.extend(["FAISSVectorStore"])
+
+try:
     from syrag.providers.openai import OpenAIEmbedder, OpenAILLM
 except ModuleNotFoundError:
     pass
@@ -33,3 +41,16 @@ else:
         }
     )
     __all__.extend(["OpenAIEmbedder", "OpenAILLM"])
+
+try:
+    from syrag.providers.google import GoogleEmbedder, GoogleLLM
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update(
+        {
+            "GoogleEmbedder": GoogleEmbedder,
+            "GoogleLLM": GoogleLLM,
+        }
+    )
+    __all__.extend(["GoogleEmbedder", "GoogleLLM"])

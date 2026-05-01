@@ -36,7 +36,9 @@ This document now tracks the implemented MVP surface rather than a future releas
 - `InMemoryLLM` for development and tests
 - `PassThroughChunker`
 - `ChromaVectorStore`
+- `FAISSVectorStore`
 - `SQLiteVectorStore`
+- `GoogleEmbedder` and `GoogleLLM` behind the `google` extra
 - `OpenAIEmbedder` and `OpenAILLM` behind the `openai` extra
 
 ### Observability and testing

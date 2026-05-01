@@ -42,6 +42,12 @@ dependencies = [
 chroma = [
     "chromadb>=1.0.0",
 ]
+faiss = [
+    "faiss-cpu>=1.8.0",
+]
+google = [
+    "google-genai>=1.0.0",
+]
 openai = [
     "httpx>=0.28.1",
 ]
@@ -53,6 +59,8 @@ testing = [
 ]
 all = [
     "chromadb>=1.0.0",
+    "faiss-cpu>=1.8.0",
+    "google-genai>=1.0.0",
     "httpx>=0.28.1",
     "uvicorn[standard]>=0.44.0",
 ]
@@ -63,6 +71,8 @@ syrag = "syrag.main:run"
 [dependency-groups]
 dev = [
     "chromadb>=1.0.0",
+    "faiss-cpu>=1.8.0",
+    "google-genai>=1.0.0",
     "httpx>=0.28.1",
     "mypy>=1.20.1",
     "pytest>=9.0.3",

@@ -1,11 +1,20 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
 
 from syrag.errors import ProviderRequestError, ProviderResponseError
-from syrag.providers import ChromaVectorStore, OpenAIEmbedder, OpenAILLM, SQLiteVectorStore
+from syrag.providers import (
+    ChromaVectorStore,
+    FAISSVectorStore,
+    GoogleEmbedder,
+    GoogleLLM,
+    OpenAIEmbedder,
+    OpenAILLM,
+    SQLiteVectorStore,
+)
 from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
 
 
@@ -86,6 +95,62 @@ class FakeChromaClient:
         return self.collection
 
 
+class FakeGoogleModels:
+    def __init__(self) -> None:
+        self.embed_calls: list[dict[str, object]] = []
+        self.generate_calls: list[dict[str, object]] = []
+
+    async def embed_content(
+        self,
+        *,
+        model: str,
+        contents: list[str],
+        config: object | None,
+    ) -> SimpleNamespace:
+        self.embed_calls.append(
+            {
+                "model": model,
+                "contents": contents,
+                "config": config,
+            }
+        )
+        return SimpleNamespace(
+            embeddings=[
+                SimpleNamespace(values=[float(index + 1), float(len(text))])
+                for index, text in enumerate(contents)
+            ]
+        )
+
+    async def generate_content(
+        self,
+        *,
+        model: str,
+        contents: str,
+        config: object | None,
+    ) -> SimpleNamespace:
+        self.generate_calls.append(
+            {
+                "model": model,
+                "contents": contents,
+                "config": config,
+            }
+        )
+        return SimpleNamespace(
+            text="SyRAG is a Python RAG framework.",
+            usage_metadata=SimpleNamespace(
+                prompt_token_count=11,
+                candidates_token_count=7,
+                total_token_count=18,
+            ),
+        )
+
+
+class FakeGoogleClient:
+    def __init__(self) -> None:
+        self.models = FakeGoogleModels()
+        self.aio = SimpleNamespace(models=self.models)
+
+
 @pytest.mark.asyncio
 async def test_sqlite_vector_store_persists_across_instances(tmp_path: Path) -> None:
     database_path = tmp_path / "vector-store.sqlite3"
@@ -133,6 +198,49 @@ async def test_sqlite_vector_store_persists_across_instances(tmp_path: Path) -> 
     assert results[0].source_id == "product"
     assert results[0].score == pytest.approx(1.0)
     assert missing_tenant_results == []
+
+
+@pytest.mark.asyncio
+async def test_faiss_vector_store_returns_filtered_cosine_matches() -> None:
+    store = FAISSVectorStore(dimensions=2)
+
+    await store.upsert(
+        chunks=[
+            DocumentChunk(
+                chunk_id="product-chunk-0",
+                source_id="product",
+                content="SyRAG works with FAISS.",
+                metadata={"topic": "product"},
+                page_number=2,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="transport-chunk-0",
+                source_id="transport",
+                content="FastAPI powers the HTTP layer.",
+                metadata={"topic": "transport"},
+                page_number=1,
+                chunk_index=0,
+            ),
+        ],
+        embeddings=[[1.0, 0.0], [0.0, 1.0]],
+        collection="overview",
+        tenant_id="tenant-a",
+    )
+
+    results = await store.query(
+        query_embedding=[1.0, 0.0],
+        top_k=2,
+        collection="overview",
+        tenant_id="tenant-a",
+        filters={"topic": "product"},
+    )
+
+    assert len(results) == 1
+    assert results[0].chunk_id == "product-chunk-0"
+    assert results[0].source_id == "product"
+    assert results[0].content == "SyRAG works with FAISS."
+    assert results[0].score == pytest.approx(1.0)
 
 
 @pytest.mark.asyncio
@@ -226,6 +334,27 @@ async def test_openai_embedder_calls_embeddings_api() -> None:
 
 
 @pytest.mark.asyncio
+async def test_google_embedder_calls_embed_content_api() -> None:
+    client = FakeGoogleClient()
+    provider = GoogleEmbedder(
+        client=client,
+        model="gemini-embedding-001",
+        output_dimensionality=2,
+        task_type="RETRIEVAL_DOCUMENT",
+    )
+
+    embeddings = await provider.embed(["hello", "world"])
+
+    assert embeddings == [[1.0, 5.0], [2.0, 5.0]]
+    assert client.models.embed_calls[0]["model"] == "gemini-embedding-001"
+    assert client.models.embed_calls[0]["contents"] == ["hello", "world"]
+    assert client.models.embed_calls[0]["config"] == {
+        "output_dimensionality": 2,
+        "task_type": "RETRIEVAL_DOCUMENT",
+    }
+
+
+@pytest.mark.asyncio
 async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
@@ -293,6 +422,45 @@ async def test_openai_llm_calls_responses_api_and_maps_usage() -> None:
         "prompt_tokens": 11,
         "completion_tokens": 7,
         "total_tokens": 18,
+    }
+
+
+@pytest.mark.asyncio
+async def test_google_llm_calls_generate_content_api_and_maps_usage() -> None:
+    client = FakeGoogleClient()
+    provider = GoogleLLM(client=client, model="gemini-2.5-flash")
+
+    response = await provider.generate(
+        generation=GenerationRequest(
+            query=QueryRequest(query="What is SyRAG?"),
+            context=[
+                RetrievedChunk(
+                    chunk_id="overview-chunk-0",
+                    source_id="overview",
+                    content="SyRAG is a production-first Python framework for RAG services.",
+                    score=0.98,
+                    metadata={},
+                    page_number=1,
+                    chunk_index=0,
+                )
+            ],
+            prompt="Question: What is SyRAG?",
+            system_prompt="Ground answers in context.",
+            require_citations=True,
+        )
+    )
+
+    assert response.answer == "SyRAG is a Python RAG framework."
+    assert response.citations[0].source_id == "overview"
+    assert response.usage == {
+        "prompt_tokens": 11,
+        "completion_tokens": 7,
+        "total_tokens": 18,
+    }
+    assert client.models.generate_calls[0]["model"] == "gemini-2.5-flash"
+    assert client.models.generate_calls[0]["contents"] == "Question: What is SyRAG?"
+    assert client.models.generate_calls[0]["config"] == {
+        "system_instruction": "Ground answers in context."
     }
 
 

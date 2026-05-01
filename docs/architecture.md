@@ -78,7 +78,9 @@ Providers adapt external or internal implementations to SyRAG protocols. First-p
 - `InMemoryLLM` for development and tests
 - `PassThroughChunker`
 - `ChromaVectorStore` behind the `chroma` extra
+- `FAISSVectorStore` behind the `faiss` extra
 - `SQLiteVectorStore`
+- `GoogleEmbedder` and `GoogleLLM` behind the `google` extra
 - `OpenAIEmbedder` and `OpenAILLM` behind the `openai` extra
 
 Provider adapters should remain thin. Generation policy, request safety, and tenant normalization belong in the framework, not in provider classes.
@@ -147,6 +149,8 @@ The package boundary is explicit:
 
 - core package: framework surface, development/test in-memory providers, SQLite vector store, tracing API integration
 - `chroma` extra: Chroma vector store provider for local vector search and Chroma-backed deployments
+- `faiss` extra: FAISS vector store provider for local vector indexing
+- `google` extra: Google Gen AI providers
 - `openai` extra: OpenAI providers
 - `testing` extra: HTTPX-based test toolkit
 - `server` extra: bundled local server runner dependency

@@ -11,7 +11,7 @@ This documentation set describes the framework that exists in this repository to
 - [Component Contracts](./component-contracts.md): The protocol-first extension points that applications and providers rely on.
 - [Public API](./public-api.md): Top-level import surface and compatibility expectations.
 - [Cookbook](./cookbook/index.md): Real-world RAG pipeline recipes for Qdrant, LangChain, LangGraph, LlamaIndex, and neighboring tools.
-- [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, SQLite, and OpenAI.
+- [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, FAISS, SQLite, OpenAI, and Google.
 - [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.
 - [MVP Status](./mvp-roadmap.md): What is implemented now and what remains intentionally out of scope.
 
