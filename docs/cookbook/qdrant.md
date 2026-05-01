@@ -44,6 +44,7 @@ OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 OPENAI_EMBEDDING_DIMENSIONS = 1536
 OPENAI_LLM_MODEL = "gpt-4.1-mini"
 QDRANT_COLLECTION = "support_docs"
+SUPPORT_COLLECTION = "support"
 
 
 class QdrantVectorStore(VectorStore):
@@ -176,24 +177,34 @@ def build_vector_store() -> VectorStore:
 
 
 async def build_app() -> SyRAG:
+    embedder = build_embedder()
+    vector_store = build_vector_store()
+    llm = build_llm()
+
     syrag = SyRAG(
         title="Support Bot",
         version="0.1.0",
         description="SyRAG backed by Qdrant",
         settings=Settings(),
     )
-    syrag.register_embedder("default", build_embedder())
-    syrag.register_vector_store("default", build_vector_store())
-    syrag.register_llm("default", build_llm())
-    syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
 
-    @syrag.ingest("/ingest")
+    @syrag.ingest("/ingest", embedder=embedder, vector_store=vector_store)
     async def ingest(request: IngestRequest) -> IngestRequest:
-        return request
+        return request.model_copy(
+            update={
+                "collection": request.collection or SUPPORT_COLLECTION,
+                "metadata": {"source": "api", **request.metadata},
+            }
+        )
 
-    @syrag.query("/query")
+    @syrag.query("/query", embedder=embedder, vector_store=vector_store, llm=llm)
     async def query(request: QueryRequest) -> QueryRequest:
-        return request
+        return request.model_copy(
+            update={
+                "collection": request.collection or SUPPORT_COLLECTION,
+                "top_k": min(request.top_k, 5),
+            }
+        )
 
     return syrag
 ```

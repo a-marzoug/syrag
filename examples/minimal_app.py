@@ -18,32 +18,37 @@ syrag = SyRAG(
     settings=Settings(),
 )
 
-syrag.register_embedder(
-    "default",
-    OpenAIEmbedder(
-        api_key=os.environ["OPENAI_API_KEY"],
-        model="text-embedding-3-small",
-    ),
+SUPPORT_COLLECTION = "support"
+
+embedder = OpenAIEmbedder(
+    api_key=os.environ["OPENAI_API_KEY"],
+    model="text-embedding-3-small",
 )
-syrag.register_vector_store(
-    "default",
-    ChromaVectorStore(path=Path(".syrag/chroma"), collection_name="support_docs"),
+vector_store = ChromaVectorStore(
+    path=Path(".syrag/chroma"),
+    collection_name="support_docs",
 )
-syrag.register_llm(
-    "default",
-    OpenAILLM(api_key=os.environ["OPENAI_API_KEY"], model="gpt-4.1-mini"),
-)
-syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
+llm = OpenAILLM(api_key=os.environ["OPENAI_API_KEY"], model="gpt-4.1-mini")
 
 
-@syrag.ingest("/ingest")
+@syrag.ingest("/ingest", embedder=embedder, vector_store=vector_store)
 async def ingest(request: IngestRequest) -> IngestRequest:
-    return request
+    return request.model_copy(
+        update={
+            "collection": request.collection or SUPPORT_COLLECTION,
+            "metadata": {"source": "api", **request.metadata},
+        }
+    )
 
 
-@syrag.query("/query")
+@syrag.query("/query", embedder=embedder, vector_store=vector_store, llm=llm)
 async def query(request: QueryRequest) -> QueryRequest:
-    return request
+    return request.model_copy(
+        update={
+            "collection": request.collection or SUPPORT_COLLECTION,
+            "top_k": min(request.top_k, 5),
+        }
+    )
 
 
 api = syrag.api
