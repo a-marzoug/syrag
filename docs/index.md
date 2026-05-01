@@ -9,6 +9,7 @@ This documentation set describes the framework that exists in this repository to
 - [Product Overview](./overview.md): What SyRAG ships, who it serves, and where it draws the line.
 - [Architecture](./architecture.md): Current runtime structure, request flow, and packaging boundaries.
 - [Component Contracts](./component-contracts.md): The protocol-first extension points that applications and providers rely on.
+- [Public API](./public-api.md): Top-level import surface and compatibility expectations.
 - [Cookbook](./cookbook/index.md): Real-world RAG pipeline recipes for Qdrant, LangChain, LangGraph, LlamaIndex, and neighboring tools.
 - [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, SQLite, and OpenAI.
 - [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.
