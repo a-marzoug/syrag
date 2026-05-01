@@ -207,6 +207,7 @@ Install the `testing` extra to use:
 - [Architecture](docs/architecture.md)
 - [Component contracts](docs/component-contracts.md)
 - [Public API](docs/public-api.md)
+- [Compatibility matrix](docs/compatibility.md)
 - [Cookbook](docs/cookbook/index.md)
 - [Provider examples](docs/provider-examples.md)
 - [Releasing](docs/releasing.md)

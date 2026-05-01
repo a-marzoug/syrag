@@ -23,6 +23,19 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert optional_dependencies["server"] == ["uvicorn[standard]>=0.44.0"]
 
 
+def test_optional_extras_are_documented_in_compatibility_matrix() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    optional_dependencies = pyproject["project"]["optional-dependencies"]
+    compatibility_doc = Path("docs/compatibility.md").read_text(encoding="utf-8")
+
+    for extra_name, dependencies in optional_dependencies.items():
+        assert f"`{extra_name}`" in compatibility_doc
+        assert f'syrag[{extra_name}]' in compatibility_doc
+        for dependency in dependencies:
+            package_name = dependency.split(">=", maxsplit=1)[0]
+            assert package_name in compatibility_doc
+
+
 def test_pyproject_declares_release_metadata() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     project = pyproject["project"]

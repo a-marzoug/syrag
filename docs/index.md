@@ -10,6 +10,7 @@ This documentation set describes the framework that exists in this repository to
 - [Architecture](./architecture.md): Current runtime structure, request flow, and packaging boundaries.
 - [Component Contracts](./component-contracts.md): The protocol-first extension points that applications and providers rely on.
 - [Public API](./public-api.md): Top-level import surface and compatibility expectations.
+- [Compatibility Matrix](./compatibility.md): Core package and optional extras compatibility.
 - [Cookbook](./cookbook/index.md): Real-world RAG pipeline recipes for Qdrant, LangChain, LangGraph, LlamaIndex, and neighboring tools.
 - [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, FAISS, SQLite, OpenAI, and Google.
 - [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.

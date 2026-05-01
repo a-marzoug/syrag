@@ -64,6 +64,8 @@ Optional provider exports are available only when their extras are installed:
 
 Testing helpers are available when `syrag[testing]` is installed.
 
+See [Compatibility Matrix](./compatibility.md) for the full extras list, dependency boundaries, and common install combinations.
+
 ## Advanced Surface
 
 SyRAG also exports registry, bootstrap, dependency-resolution, and default pipeline classes for advanced users building custom application factories or provider packages.
