@@ -38,7 +38,7 @@ Provider and policy implementations should depend on protocols rather than concr
 
 ## First-Party Components
 
-These components are available for local development, testing, or small deployments:
+These components are available as first-party utilities:
 
 - `PassThroughChunker`
 - `InMemoryEmbedder`
@@ -52,6 +52,8 @@ These components are available for local development, testing, or small deployme
 - `StructuredLogging`
 - `JSONLogFormatter`
 - `OpenTelemetryTracing`
+
+`InMemoryEmbedder`, `InMemoryVectorStore`, and `InMemoryLLM` are development/test providers. They are deterministic and convenient for local testing, but they are not production embedding, vector-search, or generation backends.
 
 Optional provider exports are available only when their extras are installed:
 

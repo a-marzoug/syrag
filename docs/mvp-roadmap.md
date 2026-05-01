@@ -31,9 +31,9 @@ This document now tracks the implemented MVP surface rather than a future releas
 
 ### First-party providers
 
-- `InMemoryEmbedder`
-- `InMemoryVectorStore`
-- `InMemoryLLM`
+- `InMemoryEmbedder` for development and tests
+- `InMemoryVectorStore` for development and tests
+- `InMemoryLLM` for development and tests
 - `PassThroughChunker`
 - `ChromaVectorStore`
 - `SQLiteVectorStore`

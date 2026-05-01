@@ -9,7 +9,7 @@ It currently ships:
 - `SyRAG` application wrapper plus `create_app()`
 - `@app.ingest(...)` and `@app.query(...)` decorators
 - typed request and response schemas
-- in-memory providers for local development
+- in-memory providers for development and tests
 - Chroma vector store behind the `chroma` extra
 - SQLite vector store in core and OpenAI providers behind the `openai` extra
 - request context, auth hooks, tenant scoping, rate limiting, and safety guards
@@ -156,6 +156,8 @@ Core:
 - `InMemoryLLM`
 - `PassThroughChunker`
 - `SQLiteVectorStore`
+
+`InMemoryEmbedder`, `InMemoryVectorStore`, and `InMemoryLLM` are development/test utilities. They are not intended as production embedding, retrieval, or generation backends.
 
 Optional `chroma` extra:
 

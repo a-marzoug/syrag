@@ -73,9 +73,9 @@ The registry boundary is intentionally narrow. It does not currently implement p
 
 Providers adapt external or internal implementations to SyRAG protocols. First-party providers currently include:
 
-- `InMemoryEmbedder`
-- `InMemoryVectorStore`
-- `InMemoryLLM`
+- `InMemoryEmbedder` for development and tests
+- `InMemoryVectorStore` for development and tests
+- `InMemoryLLM` for development and tests
 - `PassThroughChunker`
 - `ChromaVectorStore` behind the `chroma` extra
 - `SQLiteVectorStore`
@@ -145,7 +145,7 @@ Failures are categorized and serialized consistently:
 
 The package boundary is explicit:
 
-- core package: framework surface, in-memory providers, SQLite vector store, tracing API integration
+- core package: framework surface, development/test in-memory providers, SQLite vector store, tracing API integration
 - `chroma` extra: Chroma vector store provider for local vector search and Chroma-backed deployments
 - `openai` extra: OpenAI providers
 - `testing` extra: HTTPX-based test toolkit

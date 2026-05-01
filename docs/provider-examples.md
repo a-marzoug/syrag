@@ -9,15 +9,18 @@ Use Chroma when you want a specialized local vector database with persistent sto
 Install:
 
 ```bash
-pip install "syrag[chroma]"
+pip install "syrag[chroma,openai]"
 ```
 
 Configure:
 
 ```python
+import os
 from pathlib import Path
 
-from syrag import ChromaVectorStore, InMemoryEmbedder, InMemoryLLM, Settings, SyRAG
+from syrag import ChromaVectorStore, OpenAIEmbedder, OpenAILLM, Settings, SyRAG
+
+api_key = os.environ["OPENAI_API_KEY"]
 
 syrag = SyRAG(
     title="Support Bot",
@@ -26,23 +29,25 @@ syrag = SyRAG(
     settings=Settings(),
 )
 
-syrag.register_embedder("default", InMemoryEmbedder())
-syrag.register_vector_store(
-    "default",
-    ChromaVectorStore(path=Path(".syrag/chroma"), collection_name="support_docs"),
+embedder = OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small")
+vector_store = ChromaVectorStore(
+    path=Path(".syrag/chroma"),
+    collection_name="support_docs",
 )
-syrag.register_llm("default", InMemoryLLM())
-syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
+llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
 ```
 
 ## SQLite Vector Store
 
-Use SQLite when you want a lightweight persistent store with no extra vector database dependency. It is useful for demos, small local projects, and tests that need data to survive process restarts.
+Use SQLite when you want a lightweight persistent store with no extra vector database dependency. It is useful for demos, small local projects, and tests that need data to survive process restarts. For production vector search, prefer Chroma, Qdrant, or another vector database.
 
 ```python
+import os
 from pathlib import Path
 
-from syrag import InMemoryEmbedder, InMemoryLLM, SQLiteVectorStore, Settings, SyRAG
+from syrag import OpenAIEmbedder, OpenAILLM, SQLiteVectorStore, Settings, SyRAG
+
+api_key = os.environ["OPENAI_API_KEY"]
 
 syrag = SyRAG(
     title="Support Bot",
@@ -51,10 +56,9 @@ syrag = SyRAG(
     settings=Settings(),
 )
 
-syrag.register_embedder("default", InMemoryEmbedder())
-syrag.register_vector_store("default", SQLiteVectorStore(Path(".syrag/documents.sqlite3")))
-syrag.register_llm("default", InMemoryLLM())
-syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
+embedder = OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small")
+vector_store = SQLiteVectorStore(Path(".syrag/documents.sqlite3"))
+llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
 ```
 
 ## OpenAI Embedder And LLM
@@ -84,16 +88,30 @@ syrag = SyRAG(
     settings=Settings(),
 )
 
-syrag.register_embedder(
-    "default",
-    OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small"),
+embedder = OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small")
+vector_store = ChromaVectorStore(
+    path=Path(".syrag/chroma"),
+    collection_name="support_docs",
 )
-syrag.register_vector_store(
-    "default",
-    ChromaVectorStore(path=Path(".syrag/chroma"), collection_name="support_docs"),
-)
-syrag.register_llm("default", OpenAILLM(api_key=api_key, model="gpt-4.1-mini"))
-syrag.configure_defaults(embedder="default", vector_store="default", llm="default")
+llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
+```
+
+## In-Memory Providers
+
+Use in-memory providers for tests, examples that should not call external services, and framework development.
+
+They are not production providers:
+
+- `InMemoryEmbedder` is deterministic and hash-based, not semantic.
+- `InMemoryVectorStore` stores data only in the current Python process.
+- `InMemoryLLM` produces simple grounded test responses, not model-quality answers.
+
+```python
+from syrag import InMemoryEmbedder, InMemoryLLM, InMemoryVectorStore
+
+embedder = InMemoryEmbedder()
+vector_store = InMemoryVectorStore()
+llm = InMemoryLLM()
 ```
 
 ## Route Shape

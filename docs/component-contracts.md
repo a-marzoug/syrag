@@ -138,6 +138,8 @@ app.register_embedder("default", InMemoryEmbedder())
 app.configure_defaults(embedder="default")
 ```
 
+This example uses `InMemoryEmbedder` only to demonstrate the registry mechanics. In-memory providers are intended for development and tests, not production retrieval quality.
+
 The current registry supports:
 
 - first-party built-ins

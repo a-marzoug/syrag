@@ -30,7 +30,7 @@ Primary users:
 Secondary users:
 
 - teams that need a clean framework seam before adding external providers or custom policies
-- application teams that want a testable local path with in-memory components
+- application teams that want a testable local path before connecting production providers
 
 ## Product Pillars
 
@@ -79,7 +79,7 @@ Operational surface:
 
 Provider surface:
 
-- in-memory embedder, vector store, and LLM
+- in-memory development/test providers
 - Chroma vector store behind the `chroma` extra
 - SQLite-backed vector store
 - OpenAI embedder and LLM behind the `openai` extra
@@ -105,18 +105,23 @@ Those can be added later, but they are not documented as current features.
 
 ## Minimal Shape
 
-The common path looks like this:
+The common production-oriented path uses hosted embeddings/generation with a local or remote vector store. The README quick start shows OpenAI with Chroma. In-memory providers exist for tests and local framework exercises, not production retrieval quality.
 
 ```python
 from syrag import (
     SyRAG,
-    InMemoryEmbedder,
-    InMemoryLLM,
-    InMemoryVectorStore,
+    ChromaVectorStore,
     IngestRequest,
+    OpenAIEmbedder,
+    OpenAILLM,
     QueryRequest,
     Settings,
 )
+
+# See README.md for a complete runnable example.
+embedder = OpenAIEmbedder(api_key="...", model="text-embedding-3-small")
+vector_store = ChromaVectorStore(path=".syrag/chroma", collection_name="support_docs")
+llm = OpenAILLM(api_key="...", model="gpt-4.1-mini")
 
 app = SyRAG(
     title="Support Bot",
@@ -125,18 +130,12 @@ app = SyRAG(
     settings=Settings(),
 )
 
-app.register_embedder("default", InMemoryEmbedder())
-app.register_vector_store("default", InMemoryVectorStore())
-app.register_llm("default", InMemoryLLM())
-app.configure_defaults(embedder="default", vector_store="default", llm="default")
-
-
-@app.ingest("/ingest")
+@app.ingest("/ingest", embedder=embedder, vector_store=vector_store)
 async def ingest(request: IngestRequest) -> IngestRequest:
     return request
 
 
-@app.query("/query")
+@app.query("/query", embedder=embedder, vector_store=vector_store, llm=llm)
 async def query(request: QueryRequest) -> QueryRequest:
     return request
 ```
