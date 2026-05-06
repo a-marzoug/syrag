@@ -210,6 +210,7 @@ Install the `testing` extra to use:
 - [Compatibility matrix](docs/compatibility.md)
 - [Cookbook](docs/cookbook/index.md)
 - [Provider examples](docs/provider-examples.md)
+- [0.2.0 roadmap](docs/roadmap-0.2.md)
 - [Releasing](docs/releasing.md)
 - [MVP status](docs/mvp-roadmap.md)
 

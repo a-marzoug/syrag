@@ -85,6 +85,8 @@ Providers adapt external or internal implementations to SyRAG protocols. First-p
 
 Provider adapters should remain thin. Generation policy, request safety, and tenant normalization belong in the framework, not in provider classes.
 
+Future strategy integrations should prefer adapters over reimplementation. For example, LangChain text splitters and retrievers or LlamaIndex node parsers and retrievers should be wrapped behind SyRAG protocols rather than copied into core.
+
 ### 6. Observability And Guardrails
 
 Cross-cutting services currently include:
@@ -164,3 +166,14 @@ The current architecture does not yet include:
 - built-in metrics export
 - background job orchestration
 - reranker and post-processor protocols
+
+## Planned Integration Direction
+
+The next major architecture step should be integration adapters:
+
+- `syrag.integrations.langchain` for LangChain splitters, retrievers, and tools
+- `syrag.integrations.llamaindex` for LlamaIndex node parsers, retrievers, and query/tool wrappers
+- optional extras that keep these dependencies out of the core package
+- smoke tests that prove each optional integration can be installed and imported independently
+
+This keeps SyRAG focused on the production service boundary while allowing users to reuse mature RAG strategies from existing frameworks.

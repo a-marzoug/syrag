@@ -48,4 +48,6 @@ pip install syrag
 - Core imports must not require optional provider SDKs.
 - Optional provider exports are present only when their extras are installed.
 - Provider adapters should keep SDK-specific behavior inside `syrag.providers.*`.
+- Framework strategy adapters should live behind optional integration extras.
+- Prefer adapters for LangChain, LlamaIndex, and similar ecosystems before adding more first-party strategy implementations.
 - New extras should be documented here and covered by packaging tests.

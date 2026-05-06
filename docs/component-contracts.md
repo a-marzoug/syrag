@@ -32,6 +32,8 @@ Responsibilities:
 - emit stable chunk IDs
 - produce chunk indexes and optional page numbers
 
+The first-party chunker currently includes `PassThroughChunker` for one chunk per source document. More specialized chunking should be provided through framework adapters where possible.
+
 ### Embedder
 
 Converts text into vectors for ingest and query retrieval.

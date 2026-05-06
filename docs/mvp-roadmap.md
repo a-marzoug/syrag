@@ -79,11 +79,31 @@ The current implementation proves the intended framework shape:
 
 Reasonable next areas, if the project expands beyond the MVP, are:
 
-- more specialized vector-store providers
-- richer retrieval strategies and reranking
+- LangChain and LlamaIndex strategy adapters
+- reranker or post-processor protocols if adapter work requires them
 - streaming generation
 - metrics export
 - contributor and extension author guides
+
+## Planned 0.2.0 Direction
+
+The recommended next release theme is interoperability. SyRAG should remain the typed service, routing, observability, tenancy, and guardrail layer, while mature RAG frameworks provide strategy implementations where they already exist.
+
+Target 0.2.0 scope:
+
+- `syrag[langchain]` for LangChain text splitters, retrievers, and agent tools
+- `syrag[llamaindex]` for LlamaIndex node parsers, retrievers, and query/tool wrappers
+- optional-extra import smoke tests in CI
+- cookbook examples showing external strategies plugged into SyRAG routes
+- a reranker/post-processor protocol only if the integration adapters show the current retrieval seam is too narrow
+
+Deferred beyond 0.2.0:
+
+- Semantic Kernel adapters
+- Haystack adapters
+- DSPy adapters
+- CrewAI adapters
+- broad first-party reimplementation of chunking and retrieval algorithms
 
 ## Decision Filter
 
@@ -93,3 +113,4 @@ Future work should clear most of these checks:
 - does it strengthen the protocol-first model?
 - does it improve production readiness without adding heavy lock-in?
 - can it ship without bloating the core package?
+- can an existing ecosystem strategy be adapted instead of reimplemented?

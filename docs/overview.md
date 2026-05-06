@@ -50,6 +50,10 @@ Request context, tenant handling, guardrails, structured errors, structured logg
 
 The core package stays small while provider integrations and testing helpers remain behind explicit extras when appropriate.
 
+### 5. Interoperability over reimplementation
+
+SyRAG should integrate mature RAG strategies from ecosystems such as LangChain and LlamaIndex before reimplementing every chunking, retrieval, reranking, or agentic workflow internally.
+
 ## What Ships Today
 
 Application surface:
@@ -102,6 +106,7 @@ SyRAG currently does not try to be:
 - a streaming query framework
 - a full evaluation platform
 - a batteries-included metrics exporter
+- a complete replacement for strategy libraries such as LangChain or LlamaIndex
 
 Those can be added later, but they are not documented as current features.
 
