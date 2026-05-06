@@ -1,9 +1,9 @@
 __all__: list[str] = []
 
 try:
-    from syrag.integrations.langchain import LangChainTextSplitterChunker
+    from syrag.integrations.langchain import LangChainTextChunker
 except ModuleNotFoundError:
     pass
 else:
-    globals().update({"LangChainTextSplitterChunker": LangChainTextSplitterChunker})
-    __all__.extend(["LangChainTextSplitterChunker"])
+    globals().update({"LangChainTextChunker": LangChainTextChunker})
+    __all__.extend(["LangChainTextChunker"])

@@ -73,7 +73,7 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "GoogleEmbedder" in syrag.__all__
     assert "GoogleLLM" in provider_exports
     assert "GoogleLLM" in syrag.__all__
-    assert "LangChainTextSplitterChunker" in syrag.__all__
+    assert "LangChainTextChunker" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports
     assert "OpenAIEmbedder" in syrag.__all__
     assert "create_test_client" in syrag.__all__

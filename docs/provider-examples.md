@@ -182,7 +182,7 @@ llm = InMemoryLLM()
 
 ## LangChain Text Splitter
 
-Use `LangChainTextSplitterChunker` when you want SyRAG ingest routes to reuse a LangChain text splitter instead of a SyRAG-specific chunking implementation.
+Use `LangChainTextChunker` when you want SyRAG ingest routes to reuse a LangChain text splitter instead of a SyRAG-specific chunking implementation.
 
 Install:
 
@@ -194,13 +194,13 @@ Configure:
 
 ```python
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from syrag import IngestRequest, LangChainTextSplitterChunker
+from syrag import IngestRequest, LangChainTextChunker
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1_000,
     chunk_overlap=200,
 )
-chunker = LangChainTextSplitterChunker(text_splitter=text_splitter)
+chunker = LangChainTextChunker(text_splitter=text_splitter)
 
 
 @syrag.ingest("/ingest", chunker=chunker, embedder=embedder, vector_store=vector_store)

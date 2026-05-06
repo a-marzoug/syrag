@@ -1,6 +1,6 @@
 import pytest
 
-from syrag.integrations.langchain import LangChainTextSplitterChunker
+from syrag.integrations.langchain import LangChainTextChunker
 from syrag.protocols import Chunker
 from syrag.schemas import SourceDocument
 
@@ -20,7 +20,7 @@ class InvalidLangChainTextSplitter:
 
 
 @pytest.mark.asyncio
-async def test_langchain_text_splitter_chunker_adapts_split_text_output() -> None:
+async def test_langchain_text_chunker_adapts_split_text_output() -> None:
     text_splitter = FakeLangChainTextSplitter(
         chunks=[
             " First chunk. ",
@@ -28,7 +28,7 @@ async def test_langchain_text_splitter_chunker_adapts_split_text_output() -> Non
             "",
         ]
     )
-    chunker = LangChainTextSplitterChunker(text_splitter=text_splitter)
+    chunker = LangChainTextChunker(text_splitter=text_splitter)
 
     chunks = await chunker.chunk(
         [
@@ -51,19 +51,19 @@ async def test_langchain_text_splitter_chunker_adapts_split_text_output() -> Non
     assert all(chunk.page_number == 3 for chunk in chunks)
 
 
-def test_langchain_text_splitter_chunker_requires_split_text() -> None:
+def test_langchain_text_chunker_requires_split_text() -> None:
     with pytest.raises(
         TypeError,
         match=r"text_splitter must expose a callable split_text\(text\) method",
     ):
-        LangChainTextSplitterChunker(text_splitter=InvalidLangChainTextSplitter())
+        LangChainTextChunker(text_splitter=InvalidLangChainTextSplitter())
 
 
 @pytest.mark.asyncio
-async def test_langchain_text_splitter_chunker_rejects_non_string_chunks() -> None:
+async def test_langchain_text_chunker_rejects_non_string_chunks() -> None:
     text_splitter = FakeLangChainTextSplitter(chunks=["valid"])
     text_splitter.chunks = ["valid", object()]  # type: ignore[list-item]
-    chunker = LangChainTextSplitterChunker(text_splitter=text_splitter)
+    chunker = LangChainTextChunker(text_splitter=text_splitter)
 
     with pytest.raises(TypeError, match="must return only strings"):
         await chunker.chunk(

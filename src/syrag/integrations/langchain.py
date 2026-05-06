@@ -8,17 +8,15 @@ from syrag.protocols import Chunker
 from syrag.schemas import DocumentChunk, SourceDocument
 
 try:
-    from langchain_text_splitters import TextSplitter as _TextSplitter
+    import langchain_text_splitters  # noqa: F401
 except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
     raise missing_optional_dependency(
         feature="syrag.integrations.langchain",
         extra="langchain",
     ) from exc
 
-_LANGCHAIN_TEXT_SPLITTER_BASE = _TextSplitter
 
-
-class LangChainTextSplitterChunker(Chunker):
+class LangChainTextChunker(Chunker):
     """Adapts a LangChain text splitter to the SyRAG Chunker protocol."""
 
     def __init__(self, *, text_splitter: Any) -> None:
