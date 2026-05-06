@@ -91,7 +91,7 @@ The recommended next release theme is interoperability. SyRAG should remain the 
 
 Target 0.2.0 scope:
 
-- `syrag[langchain]` for LangChain text splitters, retrievers, and agent tools. Text splitter adapters are implemented.
+- `syrag[langchain]` for LangChain text splitters, retrievers, and agent tools. Text splitter and retriever adapters are implemented.
 - `syrag[llamaindex]` for LlamaIndex node parsers, retrievers, and query/tool wrappers
 - optional-extra import smoke tests in CI
 - cookbook examples showing external strategies plugged into SyRAG routes

@@ -208,6 +208,29 @@ async def ingest(request: IngestRequest) -> IngestRequest:
     return request.model_copy(update={"collection": request.collection or "support"})
 ```
 
+## LangChain Retriever Strategy
+
+Use `LangChainRetrieverStrategy` when a LangChain retriever should own query-time retrieval while SyRAG still owns the API route, request validation, prompt assembly, generation policy, and LLM response.
+
+```python
+from syrag import LangChainRetrieverStrategy, QueryRequest
+
+retrieval_strategy = LangChainRetrieverStrategy(retriever=retriever)
+
+
+@syrag.query(
+    "/query",
+    embedder=embedder,
+    vector_store=vector_store,
+    retrieval_strategy=retrieval_strategy,
+    llm=llm,
+)
+async def query(request: QueryRequest) -> QueryRequest:
+    return request.model_copy(update={"collection": request.collection or "support"})
+```
+
+The adapter calls `retriever.ainvoke(query)` when available, otherwise it runs `retriever.invoke(query)` off the event loop. Configure LangChain-specific search parameters, filters, and `k` on the retriever itself before passing it to SyRAG.
+
 ## Route Shape
 
 Provider choice does not change your route handlers:

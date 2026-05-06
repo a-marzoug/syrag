@@ -1,8 +1,10 @@
 import pytest
+from langchain_core.documents import Document
 
-from syrag.integrations.langchain import LangChainTextChunker
+from syrag.integrations.langchain import LangChainRetrieverStrategy, LangChainTextChunker
 from syrag.protocols import Chunker
-from syrag.schemas import SourceDocument
+from syrag.schemas import QueryRequest, SourceDocument
+from syrag.services import RetrievalStrategy
 
 
 class FakeLangChainTextSplitter:
@@ -16,6 +18,30 @@ class FakeLangChainTextSplitter:
 
 
 class InvalidLangChainTextSplitter:
+    pass
+
+
+class FakeLangChainRetriever:
+    def __init__(self, documents: list[Document]) -> None:
+        self.documents = documents
+        self.calls: list[str] = []
+
+    async def ainvoke(self, query: str) -> list[Document]:
+        self.calls.append(query)
+        return self.documents
+
+
+class FakeSyncLangChainRetriever:
+    def __init__(self, documents: list[Document]) -> None:
+        self.documents = documents
+        self.calls: list[str] = []
+
+    def invoke(self, query: str) -> list[Document]:
+        self.calls.append(query)
+        return self.documents
+
+
+class InvalidLangChainRetriever:
     pass
 
 
@@ -74,3 +100,76 @@ async def test_langchain_text_chunker_rejects_non_string_chunks() -> None:
                 )
             ]
         )
+
+
+@pytest.mark.asyncio
+async def test_langchain_retriever_strategy_maps_documents_to_retrieved_chunks() -> None:
+    retriever = FakeLangChainRetriever(
+        documents=[
+            Document(
+                page_content="SyRAG wraps RAG services.",
+                metadata={
+                    "source_id": "overview",
+                    "chunk_id": "overview-chunk-2",
+                    "chunk_index": 2,
+                    "page_number": 4,
+                    "score": 0.87,
+                    "topic": "framework",
+                },
+            ),
+            Document(
+                page_content="Extra result should be trimmed.",
+                metadata={"source": "overflow"},
+            ),
+        ]
+    )
+    strategy = LangChainRetrieverStrategy(retriever=retriever)
+
+    chunks = await strategy.retrieve(
+        request=QueryRequest(query="What does SyRAG wrap?", top_k=1),
+        query_embedding=[1.0, 0.0],
+        vector_store=object(),  # type: ignore[arg-type]
+    )
+
+    assert isinstance(strategy, RetrievalStrategy)
+    assert retriever.calls == ["What does SyRAG wrap?"]
+    assert len(chunks) == 1
+    assert chunks[0].chunk_id == "overview-chunk-2"
+    assert chunks[0].source_id == "overview"
+    assert chunks[0].content == "SyRAG wraps RAG services."
+    assert chunks[0].score == 0.87
+    assert chunks[0].metadata["topic"] == "framework"
+    assert chunks[0].page_number == 4
+    assert chunks[0].chunk_index == 2
+
+
+@pytest.mark.asyncio
+async def test_langchain_retriever_strategy_supports_sync_retrievers() -> None:
+    retriever = FakeSyncLangChainRetriever(
+        documents=[
+            Document(
+                page_content="SyRAG can call sync LangChain retrievers.",
+                metadata={"source": "sync-doc", "relevance_score": 0.75},
+            )
+        ]
+    )
+    strategy = LangChainRetrieverStrategy(retriever=retriever)
+
+    chunks = await strategy.retrieve(
+        request=QueryRequest(query="sync?", top_k=5),
+        query_embedding=[1.0],
+        vector_store=object(),  # type: ignore[arg-type]
+    )
+
+    assert retriever.calls == ["sync?"]
+    assert chunks[0].source_id == "sync-doc"
+    assert chunks[0].chunk_id == "sync-doc-chunk-0"
+    assert chunks[0].score == 0.75
+
+
+def test_langchain_retriever_strategy_requires_invoke_or_ainvoke() -> None:
+    with pytest.raises(
+        TypeError,
+        match=r"retriever must expose callable invoke\(query\) or ainvoke\(query\) methods",
+    ):
+        LangChainRetrieverStrategy(retriever=InvalidLangChainRetriever())

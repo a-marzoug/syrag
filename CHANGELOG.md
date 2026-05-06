@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added optional FAISS vector store provider behind the `faiss` extra.
 - Added optional Google Gen AI embedder and LLM providers behind the `google` extra.
 - Added optional LangChain text splitter adapter behind the `langchain` extra.
+- Added optional LangChain retriever strategy adapter behind the `langchain` extra.
 
 ## [0.1.0] - 2026-04-30
 
