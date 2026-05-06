@@ -1,7 +1,13 @@
+import httpx
 import pytest
 from langchain_core.documents import Document
 
-from syrag.integrations.langchain import LangChainRetrieverStrategy, LangChainTextChunker
+from syrag.integrations.langchain import (
+    LangChainRetrieverStrategy,
+    LangChainTextChunker,
+    SyRAGQueryToolInput,
+    create_syrag_query_tool,
+)
 from syrag.protocols import Chunker
 from syrag.schemas import QueryRequest, SourceDocument
 from syrag.services import RetrievalStrategy
@@ -173,3 +179,79 @@ def test_langchain_retriever_strategy_requires_invoke_or_ainvoke() -> None:
         match=r"retriever must expose callable invoke\(query\) or ainvoke\(query\) methods",
     ):
         LangChainRetrieverStrategy(retriever=InvalidLangChainRetriever())
+
+
+def test_create_syrag_query_tool_calls_query_endpoint() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            status_code=200,
+            json={
+                "answer": "SyRAG gives agents a service boundary.",
+                "citations": [
+                    {
+                        "source_id": "overview",
+                        "score": 0.91,
+                        "snippet": "SyRAG owns the RAG service boundary.",
+                        "page_number": 2,
+                    }
+                ],
+                "usage": {"total_tokens": 42},
+            },
+        )
+
+    tool = create_syrag_query_tool(
+        base_url="https://syrag.example",
+        headers={"x-tenant-id": "tenant-a"},
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = tool.invoke(
+        {
+            "query": "What does SyRAG give agents?",
+            "top_k": 2,
+            "collection": "docs",
+            "tenant_id": "tenant-a",
+            "filters": {"topic": "agents"},
+        }
+    )
+
+    assert tool.name == "query_syrag"
+    assert tool.args_schema is SyRAGQueryToolInput
+    assert "SyRAG gives agents a service boundary." in result
+    assert "overview, page 2 (score: 0.91)" in result
+    assert len(requests) == 1
+    assert requests[0].url == "https://syrag.example/query"
+    assert requests[0].headers["x-tenant-id"] == "tenant-a"
+    assert requests[0].read() == (
+        b'{"query":"What does SyRAG give agents?",'
+        b'"top_k":2,'
+        b'"filters":{"topic":"agents"},'
+        b'"collection":"docs",'
+        b'"tenant_id":"tenant-a"}'
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_syrag_query_tool_supports_async_invocation() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://syrag.example/api/query"
+        return httpx.Response(
+            status_code=200,
+            json={
+                "answer": "Async agents can call SyRAG.",
+                "citations": [],
+                "usage": {},
+            },
+        )
+
+    tool = create_syrag_query_tool(
+        base_url="https://syrag.example/api",
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = await tool.ainvoke({"query": "Can async agents call SyRAG?"})
+
+    assert result == "Async agents can call SyRAG."

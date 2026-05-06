@@ -1618,6 +1618,7 @@ google = [
     { name = "google-genai" },
 ]
 langchain = [
+    { name = "httpx" },
     { name = "langchain-core" },
     { name = "langchain-text-splitters" },
 ]
@@ -1656,6 +1657,7 @@ requires-dist = [
     { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0.0" },
     { name = "google-genai", marker = "extra == 'google'", specifier = ">=1.0.0" },
     { name = "httpx", marker = "extra == 'all'", specifier = ">=0.28.1" },
+    { name = "httpx", marker = "extra == 'langchain'", specifier = ">=0.28.1" },
     { name = "httpx", marker = "extra == 'openai'", specifier = ">=0.28.1" },
     { name = "httpx", marker = "extra == 'testing'", specifier = ">=0.28.1" },
     { name = "langchain-core", marker = "extra == 'all'", specifier = ">=1.0.0" },

@@ -196,13 +196,27 @@ else:
     __all__.extend(["GoogleEmbedder", "GoogleLLM"])
 
 try:
-    from syrag.integrations.langchain import LangChainRetrieverStrategy, LangChainTextChunker
+    from syrag.integrations.langchain import (
+        LangChainRetrieverStrategy,
+        LangChainTextChunker,
+        SyRAGQueryToolInput,
+        create_syrag_query_tool,
+    )
 except ModuleNotFoundError:
     pass
 else:
     globals()["LangChainRetrieverStrategy"] = LangChainRetrieverStrategy
     globals()["LangChainTextChunker"] = LangChainTextChunker
-    __all__.extend(["LangChainRetrieverStrategy", "LangChainTextChunker"])
+    globals()["SyRAGQueryToolInput"] = SyRAGQueryToolInput
+    globals()["create_syrag_query_tool"] = create_syrag_query_tool
+    __all__.extend(
+        [
+            "LangChainRetrieverStrategy",
+            "LangChainTextChunker",
+            "SyRAGQueryToolInput",
+            "create_syrag_query_tool",
+        ]
+    )
 
 try:
     from syrag.testing import (

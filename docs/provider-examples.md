@@ -229,7 +229,31 @@ async def query(request: QueryRequest) -> QueryRequest:
     return request.model_copy(update={"collection": request.collection or "support"})
 ```
 
-The adapter calls `retriever.ainvoke(query)` when available, otherwise it runs `retriever.invoke(query)` off the event loop. Configure LangChain-specific search parameters, filters, and `k` on the retriever itself before passing it to SyRAG.
+The adapter calls `retriever.ainvoke(query)` when available, otherwise it falls back to `retriever.invoke(query)`. Configure LangChain-specific search parameters, filters, and `k` on the retriever itself before passing it to SyRAG. Prefer retrievers with `ainvoke(...)` for async production routes.
+
+## SyRAG Query As A LangChain Tool
+
+Use `create_syrag_query_tool` when LangChain or LangGraph agents should call a running SyRAG service as a tool. SyRAG remains responsible for retrieval, generation, citations, tenancy, and error handling.
+
+```python
+from langchain.chat_models import init_chat_model
+from langchain.agents import create_agent
+from syrag import create_syrag_query_tool
+
+syrag_query_tool = create_syrag_query_tool(
+    base_url="https://rag.example.com",
+    headers={"x-tenant-id": "tenant-a"},
+)
+
+model = init_chat_model("gpt-4.1-mini", model_provider="openai")
+agent = create_agent(
+    model=model,
+    tools=[syrag_query_tool],
+    system_prompt="Use SyRAG when the user asks about internal knowledge.",
+)
+```
+
+The tool accepts `query`, `top_k`, `collection`, `tenant_id`, and `filters`. It returns answer text plus formatted citations so the agent can include sources in its final response.
 
 ## Route Shape
 

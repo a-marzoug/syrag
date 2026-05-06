@@ -26,7 +26,7 @@ pip install syrag
 | `chroma` | `pip install "syrag[chroma]"` | `chromadb>=1.0.0` | `ChromaVectorStore` | Local persistent vector database or Chroma-backed deployments. |
 | `faiss` | `pip install "syrag[faiss]"` | `faiss-cpu>=1.8.0` | `FAISSVectorStore` | Local vector indexing without running a vector database service. Metadata is stored in process. |
 | `google` | `pip install "syrag[google]"` | `google-genai>=1.0.0` | `GoogleEmbedder`, `GoogleLLM` | Gemini embeddings and generation through the Google Gen AI SDK. |
-| `langchain` | `pip install "syrag[langchain]"` | `langchain-core>=1.0.0`, `langchain-text-splitters>=0.3.0` | `LangChainTextChunker`, `LangChainRetrieverStrategy` | Use LangChain text splitters and retrievers behind SyRAG protocols. |
+| `langchain` | `pip install "syrag[langchain]"` | `httpx>=0.28.1`, `langchain-core>=1.0.0`, `langchain-text-splitters>=0.3.0` | `LangChainTextChunker`, `LangChainRetrieverStrategy`, `create_syrag_query_tool` | Use LangChain text splitters, retrievers, and tools with SyRAG. |
 | `openai` | `pip install "syrag[openai]"` | `httpx>=0.28.1` | `OpenAIEmbedder`, `OpenAILLM` | OpenAI embeddings and generation through direct HTTP adapters. |
 | `server` | `pip install "syrag[server]"` | `uvicorn[standard]>=0.44.0` | CLI/server runtime dependency | Local ASGI serving with the bundled `syrag` command or `uvicorn`. |
 | `testing` | `pip install "syrag[testing]"` | `httpx>=0.28.1` | `create_test_app`, `create_test_client`, `seed_documents`, fake providers | Downstream application tests without external model or vector-store services. |

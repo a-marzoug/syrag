@@ -19,6 +19,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert optional_dependencies["faiss"] == ["faiss-cpu>=1.8.0"]
     assert optional_dependencies["google"] == ["google-genai>=1.0.0"]
     assert optional_dependencies["langchain"] == [
+        "httpx>=0.28.1",
         "langchain-core>=1.0.0",
         "langchain-text-splitters>=0.3.0",
     ]
@@ -78,6 +79,8 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "GoogleLLM" in syrag.__all__
     assert "LangChainRetrieverStrategy" in syrag.__all__
     assert "LangChainTextChunker" in syrag.__all__
+    assert "SyRAGQueryToolInput" in syrag.__all__
+    assert "create_syrag_query_tool" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports
     assert "OpenAIEmbedder" in syrag.__all__
     assert "create_test_client" in syrag.__all__
