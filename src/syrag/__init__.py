@@ -196,6 +196,18 @@ else:
     __all__.extend(["GoogleEmbedder", "GoogleLLM"])
 
 try:
+    from syrag.integrations.langchain import LangChainTextSplitterChunker
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update(
+        {
+            "LangChainTextSplitterChunker": LangChainTextSplitterChunker,
+        }
+    )
+    __all__.extend(["LangChainTextSplitterChunker"])
+
+try:
     from syrag.testing import (
         EmbedCall,
         FakeChunker,

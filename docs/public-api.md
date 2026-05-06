@@ -60,6 +60,7 @@ Optional provider exports are available only when their extras are installed:
 - `ChromaVectorStore` with `syrag[chroma]`
 - `FAISSVectorStore` with `syrag[faiss]`
 - `GoogleEmbedder` and `GoogleLLM` with `syrag[google]`
+- `LangChainTextSplitterChunker` with `syrag[langchain]`
 - `OpenAIEmbedder` and `OpenAILLM` with `syrag[openai]`
 
 Testing helpers are available when `syrag[testing]` is installed.

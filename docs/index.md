@@ -12,7 +12,7 @@ This documentation set describes the framework that exists in this repository to
 - [Public API](./public-api.md): Top-level import surface and compatibility expectations.
 - [Compatibility Matrix](./compatibility.md): Core package and optional extras compatibility.
 - [Cookbook](./cookbook/index.md): Real-world RAG pipeline recipes for Qdrant, LangChain, LangGraph, LlamaIndex, and neighboring tools.
-- [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, FAISS, SQLite, OpenAI, and Google.
+- [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, FAISS, SQLite, OpenAI, Google, and LangChain splitting.
 - [0.2.0 Roadmap](./roadmap-0.2.md): Planned interoperability-focused release scope.
 - [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.
 - [MVP Status](./mvp-roadmap.md): What is implemented now and what remains intentionally out of scope.

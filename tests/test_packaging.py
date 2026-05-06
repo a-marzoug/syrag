@@ -18,6 +18,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert optional_dependencies["chroma"] == ["chromadb>=1.0.0"]
     assert optional_dependencies["faiss"] == ["faiss-cpu>=1.8.0"]
     assert optional_dependencies["google"] == ["google-genai>=1.0.0"]
+    assert optional_dependencies["langchain"] == ["langchain-text-splitters>=0.3.0"]
     assert optional_dependencies["openai"] == ["httpx>=0.28.1"]
     assert optional_dependencies["testing"] == ["httpx>=0.28.1"]
     assert optional_dependencies["server"] == ["uvicorn[standard]>=0.44.0"]
@@ -72,6 +73,7 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "GoogleEmbedder" in syrag.__all__
     assert "GoogleLLM" in provider_exports
     assert "GoogleLLM" in syrag.__all__
+    assert "LangChainTextSplitterChunker" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports
     assert "OpenAIEmbedder" in syrag.__all__
     assert "create_test_client" in syrag.__all__

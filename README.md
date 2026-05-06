@@ -31,6 +31,7 @@ Optional integrations:
 pip install "syrag[chroma]"
 pip install "syrag[faiss]"
 pip install "syrag[google]"
+pip install "syrag[langchain]"
 pip install "syrag[openai]"
 pip install "syrag[testing]"
 pip install "syrag[server]"

@@ -180,6 +180,34 @@ vector_store = InMemoryVectorStore()
 llm = InMemoryLLM()
 ```
 
+## LangChain Text Splitter
+
+Use `LangChainTextSplitterChunker` when you want SyRAG ingest routes to reuse a LangChain text splitter instead of a SyRAG-specific chunking implementation.
+
+Install:
+
+```bash
+pip install "syrag[langchain,openai,chroma]"
+```
+
+Configure:
+
+```python
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from syrag import IngestRequest, LangChainTextSplitterChunker
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1_000,
+    chunk_overlap=200,
+)
+chunker = LangChainTextSplitterChunker(text_splitter=text_splitter)
+
+
+@syrag.ingest("/ingest", chunker=chunker, embedder=embedder, vector_store=vector_store)
+async def ingest(request: IngestRequest) -> IngestRequest:
+    return request.model_copy(update={"collection": request.collection or "support"})
+```
+
 ## Route Shape
 
 Provider choice does not change your route handlers:
