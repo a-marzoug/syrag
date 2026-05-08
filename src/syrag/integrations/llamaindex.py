@@ -5,8 +5,8 @@ from collections.abc import Sequence
 from typing import Any
 
 from syrag._optional import missing_optional_dependency
-from syrag.protocols import Chunker
-from syrag.schemas import DocumentChunk, SourceDocument
+from syrag.protocols import Chunker, EmbeddingVector, VectorStore
+from syrag.schemas import DocumentChunk, QueryRequest, RetrievedChunk, SourceDocument
 
 try:
     from llama_index.core import Document as LlamaIndexDocument
@@ -71,15 +71,15 @@ class LlamaIndexNodeChunker(Chunker):
         return metadata
 
     def _document_chunk_for(self, node: Any, *, index: int) -> DocumentChunk:
-        content = self._content_for(node)
-        metadata = self._metadata_from(node)
-        source_id = self._source_id_for(metadata=metadata, node=node, index=index)
-        page_number = self._page_number_for(metadata)
+        content = _content_for(node)
+        metadata = _metadata_from(node)
+        source_id = _source_id_for(metadata=metadata, node=node, index=index)
+        page_number = _page_number_for(metadata)
         metadata.pop(_SOURCE_ID_KEY, None)
         metadata.pop(_PAGE_NUMBER_KEY, None)
 
         return DocumentChunk(
-            chunk_id=self._chunk_id_for(node=node, source_id=source_id, index=index),
+            chunk_id=_chunk_id_for(node=node, source_id=source_id, index=index),
             source_id=source_id,
             content=content,
             metadata=metadata,
@@ -87,49 +87,136 @@ class LlamaIndexNodeChunker(Chunker):
             chunk_index=index,
         )
 
-    def _content_for(self, node: Any) -> str:
-        get_content = getattr(node, "get_content", None)
-        if callable(get_content):
-            content = get_content()
-        else:
-            content = getattr(node, "text", None)
-        if not isinstance(content, str) or not content.strip():
-            msg = "LlamaIndex node content must be a non-empty string"
+
+class LlamaIndexRetrieverStrategy:
+    """Adapts a LlamaIndex retriever to SyRAG query retrieval."""
+
+    def __init__(self, *, retriever: Any) -> None:
+        aretrieve = getattr(retriever, "aretrieve", None)
+        retrieve = getattr(retriever, "retrieve", None)
+        if not callable(aretrieve) and not callable(retrieve):
+            msg = (
+                "retriever must expose callable retrieve(query) or "
+                "aretrieve(query) methods"
+            )
             raise TypeError(msg)
-        return content.strip()
+        self.retriever = retriever
 
-    def _metadata_from(self, node: Any) -> dict[str, Any]:
-        metadata = getattr(node, "metadata", {})
-        if not isinstance(metadata, dict):
-            return {}
-        return dict(metadata)
-
-    def _source_id_for(
+    async def retrieve(
         self,
         *,
-        metadata: dict[str, Any],
-        node: Any,
-        index: int,
-    ) -> str:
-        metadata_source_id = metadata.get(_SOURCE_ID_KEY, metadata.get("source_id"))
-        if isinstance(metadata_source_id, str) and metadata_source_id:
-            return metadata_source_id
+        request: QueryRequest,
+        query_embedding: EmbeddingVector,
+        vector_store: VectorStore,
+    ) -> list[RetrievedChunk]:
+        del query_embedding, vector_store
+        nodes = await self._retrieve_nodes(request.query)
+        return [
+            self._retrieved_chunk_for(node_with_score, index=index)
+            for index, node_with_score in enumerate(nodes[: request.top_k])
+        ]
 
-        source_node = getattr(node, "source_node", None)
-        source_node_id = getattr(source_node, "node_id", None)
-        if isinstance(source_node_id, str) and source_node_id:
-            return source_node_id
+    async def _retrieve_nodes(self, query: str) -> list[Any]:
+        aretrieve = getattr(self.retriever, "aretrieve", None)
+        if callable(aretrieve):
+            raw_nodes = await aretrieve(query)
+        else:
+            retrieve = self.retriever.retrieve
+            raw_nodes = retrieve(query)
 
-        return f"llamaindex-{index}"
+        if inspect.isawaitable(raw_nodes):
+            raw_nodes = await raw_nodes
+        if not isinstance(raw_nodes, Sequence) or isinstance(raw_nodes, (str, bytes)):
+            msg = "retriever must return a sequence of LlamaIndex NodeWithScore objects"
+            raise TypeError(msg)
+        return list(raw_nodes)
 
-    def _page_number_for(self, metadata: dict[str, Any]) -> int | None:
-        page_number = metadata.get(_PAGE_NUMBER_KEY, metadata.get("page_number"))
-        if isinstance(page_number, int):
-            return page_number
-        return None
+    def _retrieved_chunk_for(self, node_with_score: Any, *, index: int) -> RetrievedChunk:
+        node = getattr(node_with_score, "node", None)
+        if node is None:
+            msg = "LlamaIndex retrieval result must expose a node attribute"
+            raise TypeError(msg)
 
-    def _chunk_id_for(self, *, node: Any, source_id: str, index: int) -> str:
-        node_id = getattr(node, "node_id", getattr(node, "id_", None))
-        if isinstance(node_id, str) and node_id:
-            return node_id
-        return f"{source_id}-chunk-{index}"
+        content = _content_for(node)
+        metadata = _metadata_from(node)
+        source_id = _source_id_for(metadata=metadata, node=node, index=index)
+        page_number = _page_number_for(metadata)
+        metadata.pop(_SOURCE_ID_KEY, None)
+        metadata.pop(_PAGE_NUMBER_KEY, None)
+
+        return RetrievedChunk(
+            chunk_id=_chunk_id_for(node=node, source_id=source_id, index=index),
+            source_id=source_id,
+            content=content,
+            score=self._score_for(node_with_score),
+            metadata=metadata,
+            page_number=page_number,
+            chunk_index=self._chunk_index_for(metadata=metadata, index=index),
+        )
+
+    def _score_for(self, node_with_score: Any) -> float:
+        get_score = getattr(node_with_score, "get_score", None)
+        if callable(get_score):
+            score = get_score()
+        else:
+            score = getattr(node_with_score, "score", None)
+        if isinstance(score, int | float):
+            return max(0.0, min(1.0, float(score)))
+        return 1.0
+
+    def _chunk_index_for(self, *, metadata: dict[str, Any], index: int) -> int:
+        chunk_index = metadata.get("chunk_index")
+        if isinstance(chunk_index, int):
+            return chunk_index
+        return index
+
+
+def _content_for(node: Any) -> str:
+    get_content = getattr(node, "get_content", None)
+    if callable(get_content):
+        content = get_content()
+    else:
+        content = getattr(node, "text", None)
+    if not isinstance(content, str) or not content.strip():
+        msg = "LlamaIndex node content must be a non-empty string"
+        raise TypeError(msg)
+    return content.strip()
+
+
+def _metadata_from(node: Any) -> dict[str, Any]:
+    metadata = getattr(node, "metadata", {})
+    if not isinstance(metadata, dict):
+        return {}
+    return dict(metadata)
+
+
+def _source_id_for(
+    *,
+    metadata: dict[str, Any],
+    node: Any,
+    index: int,
+) -> str:
+    metadata_source_id = metadata.get(_SOURCE_ID_KEY, metadata.get("source_id"))
+    if isinstance(metadata_source_id, str) and metadata_source_id:
+        return metadata_source_id
+
+    source_node = getattr(node, "source_node", None)
+    source_node_id = getattr(source_node, "node_id", None)
+    if isinstance(source_node_id, str) and source_node_id:
+        return source_node_id
+
+    return f"llamaindex-{index}"
+
+
+def _page_number_for(metadata: dict[str, Any]) -> int | None:
+    page_number = metadata.get(_PAGE_NUMBER_KEY, metadata.get("page_number"))
+    if isinstance(page_number, int):
+        return page_number
+    return None
+
+
+def _chunk_id_for(*, node: Any, source_id: str, index: int) -> str:
+    node_id = getattr(node, "node_id", getattr(node, "id_", None))
+    if isinstance(node_id, str) and node_id:
+        return node_id
+    return f"{source_id}-chunk-{index}"

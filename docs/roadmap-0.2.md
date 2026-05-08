@@ -12,7 +12,7 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 - Add LangChain retriever adapters for SyRAG `RetrievalStrategy`. Done.
 - Add a SyRAG query API wrapper that agents can call as a LangChain tool. Done.
 - Add LlamaIndex node parser adapters for SyRAG `Chunker`. Done.
-- Add LlamaIndex retriever adapters for SyRAG `RetrievalStrategy`.
+- Add LlamaIndex retriever adapters for SyRAG `RetrievalStrategy`. Done.
 - Add a SyRAG query API wrapper for LlamaIndex query/tool use cases.
 
 ## Supporting Scope

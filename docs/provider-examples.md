@@ -283,6 +283,29 @@ async def ingest(request: IngestRequest) -> IngestRequest:
     return request.model_copy(update={"collection": request.collection or "support"})
 ```
 
+## LlamaIndex Retriever Strategy
+
+Use `LlamaIndexRetrieverStrategy` when a LlamaIndex retriever should own query-time retrieval while SyRAG still owns the route, prompt assembly, generation policy, and LLM response.
+
+```python
+from syrag import LlamaIndexRetrieverStrategy, QueryRequest
+
+retrieval_strategy = LlamaIndexRetrieverStrategy(retriever=retriever)
+
+
+@syrag.query(
+    "/query",
+    embedder=embedder,
+    vector_store=vector_store,
+    retrieval_strategy=retrieval_strategy,
+    llm=llm,
+)
+async def query(request: QueryRequest) -> QueryRequest:
+    return request.model_copy(update={"collection": request.collection or "support"})
+```
+
+The adapter calls `retriever.aretrieve(query)` when available, otherwise it falls back to `retriever.retrieve(query)`. Configure LlamaIndex-specific retrieval options on the retriever before passing it to SyRAG. Prefer retrievers with `aretrieve(...)` for async production routes.
+
 ## Route Shape
 
 Provider choice does not change your route handlers:

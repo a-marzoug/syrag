@@ -219,12 +219,16 @@ else:
     )
 
 try:
-    from syrag.integrations.llamaindex import LlamaIndexNodeChunker
+    from syrag.integrations.llamaindex import (
+        LlamaIndexNodeChunker,
+        LlamaIndexRetrieverStrategy,
+    )
 except ModuleNotFoundError:
     pass
 else:
     globals()["LlamaIndexNodeChunker"] = LlamaIndexNodeChunker
-    __all__.extend(["LlamaIndexNodeChunker"])
+    globals()["LlamaIndexRetrieverStrategy"] = LlamaIndexRetrieverStrategy
+    __all__.extend(["LlamaIndexNodeChunker", "LlamaIndexRetrieverStrategy"])
 
 try:
     from syrag.testing import (

@@ -1,9 +1,10 @@
 import pytest
-from llama_index.core.schema import TextNode
+from llama_index.core.schema import NodeWithScore, TextNode
 
-from syrag.integrations.llamaindex import LlamaIndexNodeChunker
+from syrag.integrations.llamaindex import LlamaIndexNodeChunker, LlamaIndexRetrieverStrategy
 from syrag.protocols import Chunker
-from syrag.schemas import SourceDocument
+from syrag.schemas import QueryRequest, SourceDocument
+from syrag.services import RetrievalStrategy
 
 
 class FakeLlamaIndexNodeParser:
@@ -39,6 +40,30 @@ class FakeLlamaIndexNodeParser:
 
 
 class InvalidLlamaIndexNodeParser:
+    pass
+
+
+class FakeLlamaIndexRetriever:
+    def __init__(self, nodes: list[NodeWithScore]) -> None:
+        self.nodes = nodes
+        self.calls: list[str] = []
+
+    async def aretrieve(self, query: str) -> list[NodeWithScore]:
+        self.calls.append(query)
+        return self.nodes
+
+
+class FakeSyncLlamaIndexRetriever:
+    def __init__(self, nodes: list[NodeWithScore]) -> None:
+        self.nodes = nodes
+        self.calls: list[str] = []
+
+    def retrieve(self, query: str) -> list[NodeWithScore]:
+        self.calls.append(query)
+        return self.nodes
+
+
+class InvalidLlamaIndexRetriever:
     pass
 
 
@@ -83,3 +108,91 @@ def test_llamaindex_node_chunker_requires_get_nodes_from_documents() -> None:
         match=r"node_parser must expose a callable get_nodes_from_documents",
     ):
         LlamaIndexNodeChunker(node_parser=InvalidLlamaIndexNodeParser())
+
+
+@pytest.mark.asyncio
+async def test_llamaindex_retriever_strategy_maps_nodes_to_retrieved_chunks() -> None:
+    retriever = FakeLlamaIndexRetriever(
+        nodes=[
+            NodeWithScore(
+                node=TextNode(
+                    id_="overview-node-2",
+                    text="SyRAG adapts LlamaIndex retrievers.",
+                    metadata={
+                        "source_id": "overview",
+                        "chunk_index": 2,
+                        "page_number": 4,
+                        "topic": "framework",
+                    },
+                ),
+                score=0.88,
+            ),
+            NodeWithScore(
+                node=TextNode(
+                    id_="overflow-node",
+                    text="Extra result should be trimmed.",
+                    metadata={"source_id": "overflow"},
+                ),
+                score=0.5,
+            ),
+        ]
+    )
+    strategy = LlamaIndexRetrieverStrategy(retriever=retriever)
+
+    chunks = await strategy.retrieve(
+        request=QueryRequest(query="What does SyRAG adapt?", top_k=1),
+        query_embedding=[1.0, 0.0],
+        vector_store=object(),  # type: ignore[arg-type]
+    )
+
+    assert isinstance(strategy, RetrievalStrategy)
+    assert retriever.calls == ["What does SyRAG adapt?"]
+    assert len(chunks) == 1
+    assert chunks[0].chunk_id == "overview-node-2"
+    assert chunks[0].source_id == "overview"
+    assert chunks[0].content == "SyRAG adapts LlamaIndex retrievers."
+    assert chunks[0].score == 0.88
+    assert chunks[0].metadata == {
+        "source_id": "overview",
+        "chunk_index": 2,
+        "page_number": 4,
+        "topic": "framework",
+    }
+    assert chunks[0].page_number == 4
+    assert chunks[0].chunk_index == 2
+
+
+@pytest.mark.asyncio
+async def test_llamaindex_retriever_strategy_supports_sync_retrievers() -> None:
+    retriever = FakeSyncLlamaIndexRetriever(
+        nodes=[
+            NodeWithScore(
+                node=TextNode(
+                    id_="sync-node",
+                    text="SyRAG can call sync LlamaIndex retrievers.",
+                    metadata={"source_id": "sync-doc"},
+                ),
+                score=0.77,
+            )
+        ]
+    )
+    strategy = LlamaIndexRetrieverStrategy(retriever=retriever)
+
+    chunks = await strategy.retrieve(
+        request=QueryRequest(query="sync?", top_k=5),
+        query_embedding=[1.0],
+        vector_store=object(),  # type: ignore[arg-type]
+    )
+
+    assert retriever.calls == ["sync?"]
+    assert chunks[0].chunk_id == "sync-node"
+    assert chunks[0].source_id == "sync-doc"
+    assert chunks[0].score == 0.77
+
+
+def test_llamaindex_retriever_strategy_requires_retrieve_or_aretrieve() -> None:
+    with pytest.raises(
+        TypeError,
+        match=r"retriever must expose callable retrieve\(query\) or aretrieve\(query\)",
+    ):
+        LlamaIndexRetrieverStrategy(retriever=InvalidLlamaIndexRetriever())

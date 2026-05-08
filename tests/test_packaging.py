@@ -81,6 +81,7 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "LangChainRetrieverStrategy" in syrag.__all__
     assert "LangChainTextChunker" in syrag.__all__
     assert "LlamaIndexNodeChunker" in syrag.__all__
+    assert "LlamaIndexRetrieverStrategy" in syrag.__all__
     assert "SyRAGQueryToolInput" in syrag.__all__
     assert "create_syrag_query_tool" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports
