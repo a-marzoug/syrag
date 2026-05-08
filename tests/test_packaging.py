@@ -23,6 +23,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
         "langchain-core>=1.0.0",
         "langchain-text-splitters>=0.3.0",
     ]
+    assert optional_dependencies["llamaindex"] == ["llama-index-core>=0.14.0"]
     assert optional_dependencies["openai"] == ["httpx>=0.28.1"]
     assert optional_dependencies["testing"] == ["httpx>=0.28.1"]
     assert optional_dependencies["server"] == ["uvicorn[standard]>=0.44.0"]
@@ -79,6 +80,7 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "GoogleLLM" in syrag.__all__
     assert "LangChainRetrieverStrategy" in syrag.__all__
     assert "LangChainTextChunker" in syrag.__all__
+    assert "LlamaIndexNodeChunker" in syrag.__all__
     assert "SyRAGQueryToolInput" in syrag.__all__
     assert "create_syrag_query_tool" in syrag.__all__
     assert "OpenAIEmbedder" in provider_exports

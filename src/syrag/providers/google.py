@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from syrag._optional import missing_optional_dependency
 from syrag.errors import ProviderRequestError, ProviderResponseError
@@ -50,7 +50,7 @@ class GoogleEmbedder(Embedder):
         try:
             response = await self.client.aio.models.embed_content(
                 model=self.model,
-                contents=list(texts),
+                contents=cast(Any, list(texts)),
                 config=self._config(),
             )
         except Exception as exc:

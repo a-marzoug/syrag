@@ -7,11 +7,11 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 ## Primary Scope
 
 - Add `syrag[langchain]`. Done for text splitter adapters.
-- Add `syrag[llamaindex]`.
+- Add `syrag[llamaindex]`. Done for node parser adapters.
 - Add LangChain text splitter adapters for SyRAG `Chunker`. Done.
 - Add LangChain retriever adapters for SyRAG `RetrievalStrategy`. Done.
 - Add a SyRAG query API wrapper that agents can call as a LangChain tool. Done.
-- Add LlamaIndex node parser adapters for SyRAG `Chunker`.
+- Add LlamaIndex node parser adapters for SyRAG `Chunker`. Done.
 - Add LlamaIndex retriever adapters for SyRAG `RetrievalStrategy`.
 - Add a SyRAG query API wrapper for LlamaIndex query/tool use cases.
 

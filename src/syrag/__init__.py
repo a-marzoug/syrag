@@ -219,6 +219,14 @@ else:
     )
 
 try:
+    from syrag.integrations.llamaindex import LlamaIndexNodeChunker
+except ModuleNotFoundError:
+    pass
+else:
+    globals()["LlamaIndexNodeChunker"] = LlamaIndexNodeChunker
+    __all__.extend(["LlamaIndexNodeChunker"])
+
+try:
     from syrag.testing import (
         EmbedCall,
         FakeChunker,

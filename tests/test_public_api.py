@@ -70,6 +70,7 @@ def test_optional_provider_exports_are_available_in_dev_environment() -> None:
     assert "GoogleLLM" in exports
     assert "LangChainRetrieverStrategy" in exports
     assert "LangChainTextChunker" in exports
+    assert "LlamaIndexNodeChunker" in exports
     assert "SyRAGQueryToolInput" in exports
     assert "create_syrag_query_tool" in exports
     assert "OpenAIEmbedder" in exports

@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added optional LangChain text splitter adapter behind the `langchain` extra.
 - Added optional LangChain retriever strategy adapter behind the `langchain` extra.
 - Added optional SyRAG query LangChain tool factory behind the `langchain` extra.
+- Added optional LlamaIndex node parser adapter behind the `llamaindex` extra.
 
 ## [0.1.0] - 2026-04-30
 

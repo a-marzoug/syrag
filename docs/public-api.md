@@ -61,6 +61,7 @@ Optional provider exports are available only when their extras are installed:
 - `FAISSVectorStore` with `syrag[faiss]`
 - `GoogleEmbedder` and `GoogleLLM` with `syrag[google]`
 - `LangChainTextChunker`, `LangChainRetrieverStrategy`, `SyRAGQueryToolInput`, and `create_syrag_query_tool` with `syrag[langchain]`
+- `LlamaIndexNodeChunker` with `syrag[llamaindex]`
 - `OpenAIEmbedder` and `OpenAILLM` with `syrag[openai]`
 
 Testing helpers are available when `syrag[testing]` is installed.

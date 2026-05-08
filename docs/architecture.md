@@ -154,6 +154,7 @@ The package boundary is explicit:
 - `faiss` extra: FAISS vector store provider for local vector indexing
 - `google` extra: Google Gen AI providers
 - `langchain` extra: LangChain strategy adapters
+- `llamaindex` extra: LlamaIndex strategy adapters
 - `openai` extra: OpenAI providers
 - `testing` extra: HTTPX-based test toolkit
 - `server` extra: bundled local server runner dependency

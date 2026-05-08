@@ -255,6 +255,34 @@ agent = create_agent(
 
 The tool accepts `query`, `top_k`, `collection`, `tenant_id`, and `filters`. It returns answer text plus formatted citations so the agent can include sources in its final response.
 
+## LlamaIndex Node Parser
+
+Use `LlamaIndexNodeChunker` when you want SyRAG ingest routes to reuse a LlamaIndex node parser such as `SentenceSplitter`.
+
+Install:
+
+```bash
+pip install "syrag[llamaindex,openai,chroma]"
+```
+
+Configure:
+
+```python
+from llama_index.core.node_parser import SentenceSplitter
+from syrag import IngestRequest, LlamaIndexNodeChunker
+
+node_parser = SentenceSplitter(
+    chunk_size=1_024,
+    chunk_overlap=128,
+)
+chunker = LlamaIndexNodeChunker(node_parser=node_parser)
+
+
+@syrag.ingest("/ingest", chunker=chunker, embedder=embedder, vector_store=vector_store)
+async def ingest(request: IngestRequest) -> IngestRequest:
+    return request.model_copy(update={"collection": request.collection or "support"})
+```
+
 ## Route Shape
 
 Provider choice does not change your route handlers:
