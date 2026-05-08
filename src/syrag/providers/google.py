@@ -11,7 +11,7 @@ from syrag.schemas import Citation, GenerationRequest, RAGResponse, RetrievedChu
 try:
     from google import genai
     from google.genai import types
-except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
+except ImportError as exc:  # pragma: no cover - exercised via import path
     raise missing_optional_dependency(
         feature="syrag.providers.google",
         extra="google",

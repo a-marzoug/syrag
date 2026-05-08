@@ -56,3 +56,6 @@ jobs:
 
       - name: Check package metadata
         run: uvx twine check dist/*
+
+      - name: Smoke test built wheel and optional extras
+        run: python scripts/smoke_package.py
