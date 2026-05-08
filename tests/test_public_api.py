@@ -41,6 +41,7 @@ FIRST_PARTY_COMPONENT_EXPORTS = {
     "NoOpAuthHook",
     "DefaultSafetyGuard",
     "InMemoryRateLimiter",
+    "RerankingRetrievalStrategy",
     "StructuredLogging",
     "JSONLogFormatter",
     "OpenTelemetryTracing",

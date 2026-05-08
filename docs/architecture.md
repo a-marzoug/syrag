@@ -53,6 +53,7 @@ The pipeline is explicit rather than monolithic. Today it is split into:
 
 - ingest pipeline: source documents -> chunks -> embeddings -> vector store upsert
 - retrieval strategy: query embedding -> vector store query -> retrieved chunks
+- optional reranking: retrieved chunks -> reranked or filtered chunks
 - prompt assembly: query plus retrieved chunks -> assembled prompt
 - generation policy: assembled prompt -> generation request
 - LLM generation: generation request -> `RAGResponse`

@@ -88,6 +88,8 @@ Responsibilities:
 - return the context that should continue into prompt assembly
 - keep reranking provider details outside route handlers
 
+Use `RerankingRetrievalStrategy` to compose a reranker with any retrieval strategy that already implements the SyRAG `RetrievalStrategy` protocol.
+
 ### Generation Policy
 
 Applies generation-time policy to an assembled prompt before the LLM sees it.

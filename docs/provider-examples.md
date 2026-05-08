@@ -328,6 +328,34 @@ for source_node in response.source_nodes:
 
 The query engine returns a LlamaIndex `Response`. SyRAG citations are exposed as `source_nodes`, and SyRAG usage/citation payloads are available in `response.metadata`.
 
+## Reranking Retrieval
+
+Use `RerankingRetrievalStrategy` when you want to retrieve candidates with one strategy and then reorder or filter them before prompt assembly.
+
+```python
+from syrag import RerankingRetrievalStrategy
+from syrag.services import DefaultRetrievalStrategy
+
+retrieval_strategy = RerankingRetrievalStrategy(
+    base_strategy=DefaultRetrievalStrategy(observability=syrag.observability),
+    reranker=reranker,
+    observability=syrag.observability,
+)
+
+
+@syrag.query(
+    "/query",
+    embedder=embedder,
+    vector_store=vector_store,
+    retrieval_strategy=retrieval_strategy,
+    llm=llm,
+)
+async def query(request: QueryRequest) -> QueryRequest:
+    return request.model_copy(update={"collection": request.collection or "support"})
+```
+
+The reranker must implement `Reranker.rerank(query=..., context=...)`. Provider-specific rerankers can be implemented directly or adapted from LangChain, LlamaIndex, Cohere, Jina, Voyage, FlashRank, or similar tools.
+
 ## Route Shape
 
 Provider choice does not change your route handlers:

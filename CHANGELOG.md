@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added optional LlamaIndex retriever strategy adapter behind the `llamaindex` extra.
 - Added optional SyRAG query engine adapter for LlamaIndex behind the `llamaindex` extra.
 - Added the `Reranker` protocol for retrieval post-processing.
+- Added `RerankingRetrievalStrategy` for composing retrieval strategies with rerankers.
 
 ## [0.1.0] - 2026-04-30
 

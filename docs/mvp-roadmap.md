@@ -95,7 +95,7 @@ Target 0.2.0 scope:
 - `syrag[llamaindex]` for LlamaIndex node parsers, retrievers, and query/tool wrappers. Node parser, retriever, and query engine adapters are implemented.
 - optional-extra import smoke tests in CI
 - cookbook examples showing external strategies plugged into SyRAG routes
-- a reranker/post-processor protocol only if the integration adapters show the current retrieval seam is too narrow. A first `Reranker` protocol is implemented.
+- a reranker/post-processor protocol only if the integration adapters show the current retrieval seam is too narrow. A first `Reranker` protocol and `RerankingRetrievalStrategy` are implemented.
 
 Deferred beyond 0.2.0:
 

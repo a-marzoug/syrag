@@ -14,6 +14,7 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 - Add LlamaIndex node parser adapters for SyRAG `Chunker`. Done.
 - Add LlamaIndex retriever adapters for SyRAG `RetrievalStrategy`. Done.
 - Add a SyRAG query API wrapper for LlamaIndex query/tool use cases. Done.
+- Add `RerankingRetrievalStrategy` after the reranker seam is defined. Done.
 
 ## Supporting Scope
 
@@ -40,4 +41,4 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 ## Open Decisions
 
 - Whether adapters should live under `syrag.integrations.*` or `syrag.providers.*`.
-- Whether SyRAG also needs a broader `PostProcessor` protocol after the first `Reranker` seam.
+- Whether SyRAG also needs a broader `PostProcessor` protocol after `Reranker` and `RerankingRetrievalStrategy`.

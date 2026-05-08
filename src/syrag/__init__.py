@@ -73,6 +73,7 @@ from syrag.services import (
     DefaultGenerationPolicy,
     DefaultPromptAssembler,
     DefaultRetrievalStrategy,
+    RerankingRetrievalStrategy,
     RetrievalStrategy,
 )
 from syrag.structured_logging import JSONLogFormatter, StructuredLogging
@@ -135,6 +136,7 @@ __all__ = [
     "RateLimiter",
     "RateLimitExceededError",
     "Reranker",
+    "RerankingRetrievalStrategy",
     "RequestContext",
     "RequestContextHook",
     "RequestValidationError",

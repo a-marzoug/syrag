@@ -49,6 +49,7 @@ These components are available as first-party utilities:
 - `NoOpAuthHook`
 - `DefaultSafetyGuard`
 - `InMemoryRateLimiter`
+- `RerankingRetrievalStrategy`
 - `StructuredLogging`
 - `JSONLogFormatter`
 - `OpenTelemetryTracing`
