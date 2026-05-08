@@ -27,10 +27,18 @@ try:
     from syrag.integrations.llamaindex import (
         LlamaIndexNodeChunker,
         LlamaIndexRetrieverStrategy,
+        SyRAGQueryEngine,
     )
 except ModuleNotFoundError:
     pass
 else:
     globals()["LlamaIndexNodeChunker"] = LlamaIndexNodeChunker
     globals()["LlamaIndexRetrieverStrategy"] = LlamaIndexRetrieverStrategy
-    __all__.extend(["LlamaIndexNodeChunker", "LlamaIndexRetrieverStrategy"])
+    globals()["SyRAGQueryEngine"] = SyRAGQueryEngine
+    __all__.extend(
+        [
+            "LlamaIndexNodeChunker",
+            "LlamaIndexRetrieverStrategy",
+            "SyRAGQueryEngine",
+        ]
+    )

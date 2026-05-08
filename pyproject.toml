@@ -54,6 +54,7 @@ langchain = [
     "langchain-text-splitters>=0.3.0",
 ]
 llamaindex = [
+    "httpx>=0.28.1",
     "llama-index-core>=0.14.0",
 ]
 openai = [

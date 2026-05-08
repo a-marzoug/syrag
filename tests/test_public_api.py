@@ -27,6 +27,7 @@ EXTENSION_PROTOCOL_EXPORTS = {
     "RequestContextHook",
     "AuthHook",
     "RateLimiter",
+    "Reranker",
     "SafetyGuard",
 }
 
@@ -73,6 +74,7 @@ def test_optional_provider_exports_are_available_in_dev_environment() -> None:
     assert "LlamaIndexNodeChunker" in exports
     assert "LlamaIndexRetrieverStrategy" in exports
     assert "SyRAGQueryToolInput" in exports
+    assert "SyRAGQueryEngine" in exports
     assert "create_syrag_query_tool" in exports
     assert "OpenAIEmbedder" in exports
     assert "OpenAILLM" in exports

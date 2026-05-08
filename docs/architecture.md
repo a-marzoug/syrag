@@ -167,7 +167,7 @@ The current architecture does not yet include:
 - streaming query responses
 - built-in metrics export
 - background job orchestration
-- reranker and post-processor protocols
+- post-processor protocols beyond the first `Reranker` seam
 
 ## Planned Integration Direction
 

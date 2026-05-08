@@ -13,7 +13,7 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 - Add a SyRAG query API wrapper that agents can call as a LangChain tool. Done.
 - Add LlamaIndex node parser adapters for SyRAG `Chunker`. Done.
 - Add LlamaIndex retriever adapters for SyRAG `RetrievalStrategy`. Done.
-- Add a SyRAG query API wrapper for LlamaIndex query/tool use cases.
+- Add a SyRAG query API wrapper for LlamaIndex query/tool use cases. Done.
 
 ## Supporting Scope
 
@@ -40,4 +40,4 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 ## Open Decisions
 
 - Whether adapters should live under `syrag.integrations.*` or `syrag.providers.*`.
-- Whether SyRAG needs a first-class `Reranker` or `PostProcessor` protocol before adding reranking adapters.
+- Whether SyRAG also needs a broader `PostProcessor` protocol after the first `Reranker` seam.

@@ -2,14 +2,25 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from syrag._optional import missing_optional_dependency
 from syrag.protocols import Chunker, EmbeddingVector, VectorStore
-from syrag.schemas import DocumentChunk, QueryRequest, RetrievedChunk, SourceDocument
+from syrag.schemas import (
+    Citation,
+    DocumentChunk,
+    QueryRequest,
+    RAGResponse,
+    RetrievedChunk,
+    SourceDocument,
+)
 
 try:
+    import httpx
     from llama_index.core import Document as LlamaIndexDocument
+    from llama_index.core.base.response.schema import Response
+    from llama_index.core.query_engine import BaseQueryEngine
+    from llama_index.core.schema import NodeWithScore, QueryBundle, TextNode
 except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import path
     raise missing_optional_dependency(
         feature="syrag.integrations.llamaindex",
@@ -18,6 +29,75 @@ except ModuleNotFoundError as exc:  # pragma: no cover - exercised via import pa
 
 _SOURCE_ID_KEY = "syrag_source_id"
 _PAGE_NUMBER_KEY = "syrag_page_number"
+
+
+class SyRAGQueryEngine(BaseQueryEngine):
+    """LlamaIndex query engine that delegates retrieval and generation to SyRAG."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        path: str = "/query",
+        top_k: int = 5,
+        collection: str | None = None,
+        tenant_id: str | None = None,
+        filters: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        timeout_seconds: float = 30.0,
+        transport: httpx.BaseTransport | httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        super().__init__(callback_manager=None)
+        self.endpoint = _endpoint_url(base_url=base_url, path=path)
+        self.top_k = top_k
+        self.collection = collection
+        self.tenant_id = tenant_id
+        self.filters = filters or {}
+        self.headers = headers
+        self.timeout_seconds = timeout_seconds
+        self.sync_transport = cast(httpx.BaseTransport | None, transport)
+        self.async_transport = cast(httpx.AsyncBaseTransport | None, transport)
+
+    def _query(self, query_bundle: QueryBundle) -> Response:
+        with httpx.Client(
+            headers=self.headers,
+            timeout=self.timeout_seconds,
+            transport=self.sync_transport,
+        ) as client:
+            response = client.post(
+                self.endpoint,
+                json=self._query_payload(query_bundle.query_str),
+            )
+            response.raise_for_status()
+            return _response_for(RAGResponse.model_validate(response.json()))
+
+    async def _aquery(self, query_bundle: QueryBundle) -> Response:
+        async with httpx.AsyncClient(
+            headers=self.headers,
+            timeout=self.timeout_seconds,
+            transport=self.async_transport,
+        ) as client:
+            response = await client.post(
+                self.endpoint,
+                json=self._query_payload(query_bundle.query_str),
+            )
+            response.raise_for_status()
+            return _response_for(RAGResponse.model_validate(response.json()))
+
+    def _get_prompt_modules(self) -> dict[str, Any]:
+        return {}
+
+    def _query_payload(self, query: str) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "query": query,
+            "top_k": self.top_k,
+            "filters": self.filters,
+        }
+        if self.collection is not None:
+            payload["collection"] = self.collection
+        if self.tenant_id is not None:
+            payload["tenant_id"] = self.tenant_id
+        return payload
 
 
 class LlamaIndexNodeChunker(Chunker):
@@ -220,3 +300,35 @@ def _chunk_id_for(*, node: Any, source_id: str, index: int) -> str:
     if isinstance(node_id, str) and node_id:
         return node_id
     return f"{source_id}-chunk-{index}"
+
+
+def _response_for(response: RAGResponse) -> Response:
+    return Response(
+        response=response.answer,
+        source_nodes=[
+            _node_with_score_for(citation, index=index)
+            for index, citation in enumerate(response.citations)
+        ],
+        metadata={
+            "usage": response.usage,
+            "citations": [citation.model_dump() for citation in response.citations],
+        },
+    )
+
+
+def _node_with_score_for(citation: Citation, *, index: int) -> NodeWithScore:
+    metadata: dict[str, Any] = {"source_id": citation.source_id}
+    if citation.page_number is not None:
+        metadata["page_number"] = citation.page_number
+    return NodeWithScore(
+        node=TextNode(
+            id_=f"{citation.source_id}-citation-{index}",
+            text=citation.snippet,
+            metadata=metadata,
+        ),
+        score=citation.score,
+    )
+
+
+def _endpoint_url(*, base_url: str, path: str) -> str:
+    return f"{base_url.rstrip('/')}/{path.lstrip('/')}"

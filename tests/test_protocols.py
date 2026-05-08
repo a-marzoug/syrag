@@ -13,6 +13,7 @@ from syrag.protocols import (
     PromptAssembler,
     RateLimiter,
     RequestContextHook,
+    Reranker,
     SafetyGuard,
     VectorStore,
 )
@@ -175,6 +176,17 @@ class ExamplePromptAssembler:
         )
 
 
+class ExampleReranker:
+    async def rerank(
+        self,
+        *,
+        query: QueryRequest,
+        context: Sequence[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        del query
+        return sorted(context, key=lambda chunk: chunk.score, reverse=True)
+
+
 class ExampleGenerationPolicy:
     async def apply(
         self,
@@ -222,6 +234,7 @@ def test_example_components_match_runtime_protocols() -> None:
     assert isinstance(ExampleSafetyGuard(), SafetyGuard)
     assert isinstance(ExampleGenerationPolicy(), GenerationPolicy)
     assert isinstance(ExamplePromptAssembler(), PromptAssembler)
+    assert isinstance(ExampleReranker(), Reranker)
     assert isinstance(ExampleRetrievalStrategy(), RetrievalStrategy)
 
 

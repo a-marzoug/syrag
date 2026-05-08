@@ -77,6 +77,17 @@ Responsibilities:
 - produce `AssembledPrompt`
 - stay independent from provider-specific generation APIs
 
+### Reranker
+
+Reorders or filters retrieved chunks before prompt assembly.
+
+Responsibilities:
+
+- receive the original `QueryRequest`
+- receive candidate `RetrievedChunk` values
+- return the context that should continue into prompt assembly
+- keep reranking provider details outside route handlers
+
 ### Generation Policy
 
 Applies generation-time policy to an assembled prompt before the LLM sees it.

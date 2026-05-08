@@ -140,6 +140,19 @@ class PromptAssembler(Protocol):
 
 
 @runtime_checkable
+class Reranker(Protocol):
+    """Reorders or filters retrieved chunks before prompt assembly."""
+
+    async def rerank(
+        self,
+        *,
+        query: QueryRequest,
+        context: Sequence[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        """Return reranked or filtered chunks for the query."""
+
+
+@runtime_checkable
 class GenerationPolicy(Protocol):
     """Applies generation-time constraints and instructions to an assembled prompt."""
 

@@ -35,6 +35,7 @@ from syrag.protocols import (
     PromptAssembler,
     RateLimiter,
     RequestContextHook,
+    Reranker,
     SafetyGuard,
     VectorStore,
 )
@@ -133,6 +134,7 @@ __all__ = [
     "RAGResponse",
     "RateLimiter",
     "RateLimitExceededError",
+    "Reranker",
     "RequestContext",
     "RequestContextHook",
     "RequestValidationError",
@@ -222,13 +224,21 @@ try:
     from syrag.integrations.llamaindex import (
         LlamaIndexNodeChunker,
         LlamaIndexRetrieverStrategy,
+        SyRAGQueryEngine,
     )
 except ModuleNotFoundError:
     pass
 else:
     globals()["LlamaIndexNodeChunker"] = LlamaIndexNodeChunker
     globals()["LlamaIndexRetrieverStrategy"] = LlamaIndexRetrieverStrategy
-    __all__.extend(["LlamaIndexNodeChunker", "LlamaIndexRetrieverStrategy"])
+    globals()["SyRAGQueryEngine"] = SyRAGQueryEngine
+    __all__.extend(
+        [
+            "LlamaIndexNodeChunker",
+            "LlamaIndexRetrieverStrategy",
+            "SyRAGQueryEngine",
+        ]
+    )
 
 try:
     from syrag.testing import (

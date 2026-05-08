@@ -1,7 +1,13 @@
+import httpx
 import pytest
+from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.schema import NodeWithScore, TextNode
 
-from syrag.integrations.llamaindex import LlamaIndexNodeChunker, LlamaIndexRetrieverStrategy
+from syrag.integrations.llamaindex import (
+    LlamaIndexNodeChunker,
+    LlamaIndexRetrieverStrategy,
+    SyRAGQueryEngine,
+)
 from syrag.protocols import Chunker
 from syrag.schemas import QueryRequest, SourceDocument
 from syrag.services import RetrievalStrategy
@@ -196,3 +202,87 @@ def test_llamaindex_retriever_strategy_requires_retrieve_or_aretrieve() -> None:
         match=r"retriever must expose callable retrieve\(query\) or aretrieve\(query\)",
     ):
         LlamaIndexRetrieverStrategy(retriever=InvalidLlamaIndexRetriever())
+
+
+def test_syrag_query_engine_calls_query_endpoint() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            status_code=200,
+            json={
+                "answer": "SyRAG can serve as a LlamaIndex query engine.",
+                "citations": [
+                    {
+                        "source_id": "overview",
+                        "score": 0.93,
+                        "snippet": "SyRAG owns the service boundary.",
+                        "page_number": 2,
+                    }
+                ],
+                "usage": {"total_tokens": 31},
+            },
+        )
+
+    query_engine = SyRAGQueryEngine(
+        base_url="https://syrag.example",
+        top_k=2,
+        collection="docs",
+        tenant_id="tenant-a",
+        filters={"topic": "llamaindex"},
+        headers={"x-tenant-id": "tenant-a"},
+        transport=httpx.MockTransport(handler),
+    )
+
+    response = query_engine.query("What can SyRAG serve as?")
+
+    assert isinstance(query_engine, BaseQueryEngine)
+    assert str(response) == "SyRAG can serve as a LlamaIndex query engine."
+    assert response.source_nodes[0].node.get_content() == (
+        "SyRAG owns the service boundary."
+    )
+    assert response.source_nodes[0].score == 0.93
+    assert response.metadata == {
+        "usage": {"total_tokens": 31},
+        "citations": [
+            {
+                "source_id": "overview",
+                "score": 0.93,
+                "snippet": "SyRAG owns the service boundary.",
+                "page_number": 2,
+            }
+        ],
+    }
+    assert requests[0].url == "https://syrag.example/query"
+    assert requests[0].headers["x-tenant-id"] == "tenant-a"
+    assert requests[0].read() == (
+        b'{"query":"What can SyRAG serve as?",'
+        b'"top_k":2,'
+        b'"filters":{"topic":"llamaindex"},'
+        b'"collection":"docs",'
+        b'"tenant_id":"tenant-a"}'
+    )
+
+
+@pytest.mark.asyncio
+async def test_syrag_query_engine_supports_async_queries() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://syrag.example/api/query"
+        return httpx.Response(
+            status_code=200,
+            json={
+                "answer": "Async LlamaIndex can call SyRAG.",
+                "citations": [],
+                "usage": {},
+            },
+        )
+
+    query_engine = SyRAGQueryEngine(
+        base_url="https://syrag.example/api",
+        transport=httpx.MockTransport(handler),
+    )
+
+    response = await query_engine.aquery("Can async LlamaIndex call SyRAG?")
+
+    assert str(response) == "Async LlamaIndex can call SyRAG."

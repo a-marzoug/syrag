@@ -306,6 +306,28 @@ async def query(request: QueryRequest) -> QueryRequest:
 
 The adapter calls `retriever.aretrieve(query)` when available, otherwise it falls back to `retriever.retrieve(query)`. Configure LlamaIndex-specific retrieval options on the retriever before passing it to SyRAG. Prefer retrievers with `aretrieve(...)` for async production routes.
 
+## SyRAG Query As A LlamaIndex Query Engine
+
+Use `SyRAGQueryEngine` when LlamaIndex should call a running SyRAG service as a query engine. SyRAG remains responsible for retrieval, generation, citations, tenancy, and error handling.
+
+```python
+from syrag import SyRAGQueryEngine
+
+query_engine = SyRAGQueryEngine(
+    base_url="https://rag.example.com",
+    collection="support",
+    tenant_id="tenant-a",
+    headers={"x-tenant-id": "tenant-a"},
+)
+
+response = query_engine.query("What does the support handbook say about refunds?")
+print(str(response))
+for source_node in response.source_nodes:
+    print(source_node.node.get_content())
+```
+
+The query engine returns a LlamaIndex `Response`. SyRAG citations are exposed as `source_nodes`, and SyRAG usage/citation payloads are available in `response.metadata`.
+
 ## Route Shape
 
 Provider choice does not change your route handlers:
