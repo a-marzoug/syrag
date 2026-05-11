@@ -6,6 +6,7 @@ The most production-friendly pattern is to run SyRAG as a service and call it fr
 
 The complete LangChain + Qdrant script is available at [`examples/integrations/langchain_qdrant_rag.py`](../../examples/integrations/langchain_qdrant_rag.py).
 The complete LangChain agent script is available at [`examples/integrations/langchain_syrag_agent.py`](../../examples/integrations/langchain_syrag_agent.py).
+The complete SyRAG route adapter script is available at [`examples/integrations/langchain_syrag_routes.py`](../../examples/integrations/langchain_syrag_routes.py).
 
 ## Full LangChain + Qdrant RAG Pipeline
 
@@ -98,6 +99,61 @@ print(answer)
 ```
 
 This pipeline is pure LangChain. Use it when you do not need SyRAG’s service boundary, request context, route validation, or framework-level error model.
+
+## Plug LangChain Strategies Into SyRAG Routes
+
+Use this when SyRAG should remain the FastAPI service boundary, but LangChain should provide mature strategy implementations such as text splitting or retrieval.
+
+Install:
+
+```bash
+pip install "syrag[chroma,langchain,openai,server]" langchain-openai langchain-qdrant qdrant-client
+```
+
+The app in [`examples/integrations/langchain_syrag_routes.py`](../../examples/integrations/langchain_syrag_routes.py) wires a LangChain text splitter into `/ingest` and a LangChain Qdrant retriever into `/query`:
+
+```python
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from syrag.integrations.langchain import LangChainRetrieverStrategy, LangChainTextChunker
+
+
+langchain_chunker = LangChainTextChunker(
+    text_splitter=RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=120,
+    )
+)
+langchain_retriever = langchain_vector_store.as_retriever(search_kwargs={"k": 5})
+
+
+@syrag.ingest(
+    "/ingest",
+    chunker=langchain_chunker,
+    embedder=syrag_embedder,
+    vector_store=syrag_storage,
+)
+async def ingest(request: IngestRequest) -> IngestRequest:
+    return request.model_copy(
+        update={
+            "collection": request.collection or "support",
+            "metadata": {"source": "langchain-text-splitter", **request.metadata},
+        }
+    )
+
+
+@syrag.query(
+    "/query",
+    embedder=syrag_embedder,
+    vector_store=retriever_owned_vector_store,
+    llm=syrag_llm,
+    retrieval_strategy=LangChainRetrieverStrategy(retriever=langchain_retriever),
+)
+async def query(request: QueryRequest) -> QueryRequest:
+    return request.model_copy(update={"top_k": min(request.top_k, 5)})
+```
+
+In the current route contract, SyRAG still requires an `embedder` and `vector_store` for query routes. When a `LangChainRetrieverStrategy` owns retrieval, the adapter ignores SyRAG’s `query_embedding` and `vector_store`; the example uses a small placeholder vector store to make that boundary explicit.
 
 ## Make SyRAG A LangChain Agent Tool
 

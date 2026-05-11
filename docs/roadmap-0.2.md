@@ -20,8 +20,8 @@ SyRAG should stay focused on the production service boundary: typed routes, requ
 
 - Add optional-extra import smoke tests in CI. Done.
 - Add wheel install/import smoke tests in CI. Done.
-- Update the compatibility matrix for new integration extras.
-- Add cookbook examples showing external strategies plugged into SyRAG ingest and query routes.
+- Update the compatibility matrix for new integration extras. Done.
+- Add cookbook examples showing external strategies plugged into SyRAG ingest and query routes. Done.
 
 ## Design Checks
 

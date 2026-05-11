@@ -5,6 +5,7 @@ LlamaIndex is strong for data connectors, indexing workflows, and query engines.
 The cleanest production pattern is to let LlamaIndex prepare or retrieve data when needed, while SyRAG owns the API boundary.
 
 The complete LlamaIndex + Qdrant script is available at [`examples/integrations/llamaindex_qdrant_rag.py`](../../examples/integrations/llamaindex_qdrant_rag.py).
+The complete SyRAG route adapter script is available at [`examples/integrations/llamaindex_syrag_routes.py`](../../examples/integrations/llamaindex_syrag_routes.py).
 
 ## Full LlamaIndex + Qdrant RAG Pipeline
 
@@ -66,6 +67,61 @@ print(response)
 ```
 
 This pipeline is pure LlamaIndex. Use it for experiments, data-heavy indexing workflows, or when LlamaIndex query engines are the application boundary.
+
+## Plug LlamaIndex Strategies Into SyRAG Routes
+
+Use this when SyRAG should own the HTTP API, request context, guardrails, and response model, while LlamaIndex provides node parsing or retrieval.
+
+Install:
+
+```bash
+pip install "syrag[chroma,llamaindex,openai,server]" llama-index-embeddings-openai llama-index-vector-stores-qdrant qdrant-client
+```
+
+The app in [`examples/integrations/llamaindex_syrag_routes.py`](../../examples/integrations/llamaindex_syrag_routes.py) wires a LlamaIndex node parser into `/ingest` and a LlamaIndex Qdrant-backed retriever into `/query`:
+
+```python
+from llama_index.core.node_parser import SentenceSplitter
+
+from syrag.integrations.llamaindex import LlamaIndexNodeChunker, LlamaIndexRetrieverStrategy
+
+
+llamaindex_chunker = LlamaIndexNodeChunker(
+    node_parser=SentenceSplitter(
+        chunk_size=800,
+        chunk_overlap=120,
+    )
+)
+llamaindex_retriever = llamaindex_index.as_retriever(similarity_top_k=5)
+
+
+@syrag.ingest(
+    "/ingest",
+    chunker=llamaindex_chunker,
+    embedder=syrag_embedder,
+    vector_store=syrag_storage,
+)
+async def ingest(request: IngestRequest) -> IngestRequest:
+    return request.model_copy(
+        update={
+            "collection": request.collection or "support",
+            "metadata": {"source": "llamaindex-node-parser", **request.metadata},
+        }
+    )
+
+
+@syrag.query(
+    "/query",
+    embedder=syrag_embedder,
+    vector_store=retriever_owned_vector_store,
+    llm=syrag_llm,
+    retrieval_strategy=LlamaIndexRetrieverStrategy(retriever=llamaindex_retriever),
+)
+async def query(request: QueryRequest) -> QueryRequest:
+    return request.model_copy(update={"top_k": min(request.top_k, 5)})
+```
+
+In the current route contract, SyRAG still requires an `embedder` and `vector_store` for query routes. When a `LlamaIndexRetrieverStrategy` owns retrieval, the adapter ignores SyRAG’s `query_embedding` and `vector_store`; the example uses a small placeholder vector store to make that boundary explicit.
 
 ## Send LlamaIndex Documents To SyRAG
 

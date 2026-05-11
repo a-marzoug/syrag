@@ -8,6 +8,7 @@ The cookbook shows how SyRAG fits into real application stacks. These recipes ar
 - [LangChain integration](./langchain.md)
 - [LangGraph RAG pipeline](./langgraph.md)
 - [LlamaIndex integration](./llamaindex.md)
+- SyRAG route adapter examples for LangChain and LlamaIndex are available in [`examples/integrations`](../../examples/integrations).
 
 ## Integration Patterns
 
