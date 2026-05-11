@@ -5,6 +5,7 @@ The cookbook shows how SyRAG fits into real application stacks. These recipes ar
 ## Recipes
 
 - [Qdrant vector store pipeline](./qdrant.md)
+- [Authentication](./authentication.md)
 - [LangChain integration](./langchain.md)
 - [LangGraph RAG pipeline](./langgraph.md)
 - [LlamaIndex integration](./llamaindex.md)
