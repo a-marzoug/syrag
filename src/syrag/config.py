@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = Field(default="SyRAG")
-    app_version: str = Field(default="0.1.0")
+    app_version: str = Field(default="0.2.0")
     environment: str = Field(default="development")
     host: str = Field(default="127.0.0.1")
     port: int = Field(default=8000, ge=1, le=65535)
