@@ -8,6 +8,7 @@ The cookbook shows how SyRAG fits into real application stacks. These recipes ar
 - [Authentication](./authentication.md)
 - [Observability](./observability.md)
 - [Background ingestion](./background-ingestion.md)
+- [Hosted vector database](./hosted-vector-database.md)
 - [LangChain integration](./langchain.md)
 - [LangGraph RAG pipeline](./langgraph.md)
 - [LlamaIndex integration](./llamaindex.md)
