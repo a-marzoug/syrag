@@ -1,21 +1,35 @@
-# SyRAG
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="SyRAG logo" width="132">
+</p>
 
-SyRAG is a production-oriented Python framework for building Retrieval-Augmented Generation services with a small, typed API on top of FastAPI.
+<h1 align="center">SyRAG</h1>
+
+<p align="center">
+  Build typed, production-oriented RAG services with a FastAPI-style developer experience.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/syrag/"><img alt="PyPI" src="https://img.shields.io/pypi/v/syrag.svg"></a>
+  <a href="https://pypi.org/project/syrag/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/syrag.svg"></a>
+  <a href="https://github.com/a-marzoug/syrag/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/a-marzoug/syrag/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/a-marzoug/syrag/actions/workflows/docs.yml"><img alt="Docs" src="https://github.com/a-marzoug/syrag/actions/workflows/docs.yml/badge.svg"></a>
+  <a href="https://github.com/a-marzoug/syrag/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/a-marzoug/syrag.svg"></a>
+</p>
+
+SyRAG is a Python framework for building Retrieval-Augmented Generation services with explicit pipeline contracts, typed request/response models, and production-facing defaults on top of FastAPI.
+
+It is designed for teams that want RAG APIs with clean provider boundaries, OpenAPI docs, request context, observability, guardrails, and testable local development without committing their whole application to a single orchestration framework.
+
+## Highlights
+
+- FastAPI-style `@app.ingest(...)` and `@app.query(...)` route decorators.
+- Typed schemas for ingest, retrieval, generation, citations, usage, and errors.
+- Protocol-first extension points for chunkers, embedders, vector stores, retrieval strategies, prompt assembly, generation policies, LLMs, hooks, rate limiters, and safety guards.
+- Optional integrations for OpenAI, Google, Chroma, FAISS, LangChain, and LlamaIndex.
+- Development/test providers and testing helpers for reliable local and CI workflows.
+- OpenAPI output, structured logging, and OpenTelemetry-compatible tracing.
 
 Supported Python versions: `3.12` and `3.13`.
-
-It currently ships:
-
-- `SyRAG` application wrapper plus `create_app()`
-- `@app.ingest(...)` and `@app.query(...)` decorators
-- typed request and response schemas
-- in-memory providers for development and tests
-- Chroma and FAISS vector stores behind optional extras
-- SQLite vector store in core
-- OpenAI and Google model providers behind optional extras
-- request context, auth hooks, tenant scoping, rate limiting, and safety guards
-- OpenAPI docs, structured logging, and OpenTelemetry-compatible tracing
-- a testing toolkit with fake providers and ASGI client helpers
 
 ## Installation
 
@@ -67,7 +81,7 @@ from syrag import (
 
 app = SyRAG(
     title="Support Bot",
-    version="0.1.0",
+    version="0.2.0",
     description="Internal support assistant",
     settings=Settings(),
 )
@@ -204,6 +218,7 @@ Install the `testing` extra to use:
 
 ## Docs
 
+- [Hosted docs](https://a-marzoug.github.io/syrag/)
 - [Docs index](docs/index.md)
 - [Overview](docs/overview.md)
 - [Architecture](docs/architecture.md)
@@ -215,6 +230,12 @@ Install the `testing` extra to use:
 - [0.2.0 roadmap](docs/roadmap-0.2.md)
 - [Releasing](docs/releasing.md)
 - [MVP status](docs/mvp-roadmap.md)
+
+Build the docs locally with MkDocs Material:
+
+```bash
+uv run --group docs mkdocs serve
+```
 
 ## Examples
 
@@ -229,3 +250,10 @@ Install the `testing` extra to use:
 - [LlamaIndex + Qdrant RAG](docs/cookbook/llamaindex.md)
 
 Full example scripts live in [examples/integrations](examples/integrations).
+
+## Community
+
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Changelog](CHANGELOG.md)
