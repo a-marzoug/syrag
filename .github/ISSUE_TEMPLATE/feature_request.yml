@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a capability, provider, integration, or API improvement.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or workflow gap does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the API, provider, or behavior you want.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core API
+        - Provider integration
+        - Retrieval strategy
+        - Chunking
+        - Observability
+        - Documentation
+        - Testing
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Mention existing LangChain, LlamaIndex, Semantic Kernel, or provider-native options if relevant.
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility notes
+      description: Should this live in core or behind an optional extra?
