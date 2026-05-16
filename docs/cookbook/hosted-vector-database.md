@@ -2,7 +2,7 @@
 
 Hosted vector databases are the preferred deployment shape once a SyRAG service needs persistence, backups, scaling, or independent operations ownership. This recipe uses hosted Qdrant because it has a simple Python client and the same payload filtering model as local Qdrant.
 
-The complete hosted Qdrant example is available at [`examples/integrations/hosted_qdrant_app.py`](../../examples/integrations/hosted_qdrant_app.py).
+The complete hosted Qdrant example is available at [`examples/integrations/hosted_qdrant_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/hosted_qdrant_app.py).
 
 ## Hosted Qdrant App
 

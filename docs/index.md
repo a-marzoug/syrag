@@ -13,6 +13,7 @@ This documentation set describes the framework that exists in this repository to
 - [Compatibility Matrix](./compatibility.md): Core package and optional extras compatibility.
 - [Cookbook](./cookbook/index.md): Real-world recipes for authentication, observability, background ingestion, hosted vector databases, Qdrant, LangChain, LangGraph, LlamaIndex, and neighboring tools.
 - [Provider Examples](./provider-examples.md): Copyable setup examples for Chroma, FAISS, SQLite, OpenAI, Google, LangChain, and LlamaIndex.
+- [Documentation Site](./documentation-site.md): How to preview, build, and publish the hosted MkDocs Material site.
 - [0.2.0 Roadmap](./roadmap-0.2.md): Planned interoperability-focused release scope.
 - [Releasing](./releasing.md): Maintainer checklist for tag-driven PyPI publishing.
 - [MVP Status](./mvp-roadmap.md): What is implemented now and what remains intentionally out of scope.

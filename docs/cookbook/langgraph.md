@@ -2,7 +2,7 @@
 
 This recipe uses LangGraph as the orchestration layer and SyRAG as the RAG service boundary. LangGraph owns the workflow. SyRAG owns retrieval, generation, citations, tenant context, guardrails, and observability.
 
-The complete script is available at [`examples/integrations/langgraph_syrag_rag.py`](../../examples/integrations/langgraph_syrag_rag.py).
+The complete script is available at [`examples/integrations/langgraph_syrag_rag.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/langgraph_syrag_rag.py).
 
 ## Install
 

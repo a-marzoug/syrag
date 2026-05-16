@@ -12,7 +12,7 @@ authors = [
     { name = "A. Marzoug" },
 ]
 requires-python = ">=3.12,<3.14"
-urls = { Repository = "https://github.com/a-marzoug/syrag", Issues = "https://github.com/a-marzoug/syrag/issues", Documentation = "https://github.com/a-marzoug/syrag/tree/main/docs" }
+urls = { Repository = "https://github.com/a-marzoug/syrag", Issues = "https://github.com/a-marzoug/syrag/issues", Documentation = "https://a-marzoug.github.io/syrag/" }
 keywords = [
     "rag",
     "retrieval-augmented-generation",
@@ -94,6 +94,10 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "ruff>=0.15.11",
     "uvicorn[standard]>=0.44.0",
+]
+docs = [
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.0",
 ]
 
 [tool.hatch.build.targets.wheel]

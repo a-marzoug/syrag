@@ -2,7 +2,7 @@
 
 SyRAG emits request-level logs and pipeline-stage events from the framework runtime. Applications can route those events into JSON logs, OpenTelemetry spans, or both without adding logging code to every route handler.
 
-The complete observability example is available at [`examples/integrations/observability_app.py`](../../examples/integrations/observability_app.py).
+The complete observability example is available at [`examples/integrations/observability_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/observability_app.py).
 
 ## JSON Logs And OpenTelemetry
 

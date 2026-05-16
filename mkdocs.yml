@@ -1,0 +1,76 @@
+site_name: SyRAG
+site_description: Production-oriented Python framework for building RAG services on top of FastAPI.
+site_url: https://a-marzoug.github.io/syrag/
+repo_name: a-marzoug/syrag
+repo_url: https://github.com/a-marzoug/syrag
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  features:
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - Architecture: architecture.md
+  - Public API:
+      - Public API: public-api.md
+      - Component Contracts: component-contracts.md
+      - Compatibility: compatibility.md
+  - Cookbook:
+      - Index: cookbook/index.md
+      - Qdrant: cookbook/qdrant.md
+      - LangChain: cookbook/langchain.md
+      - LangGraph: cookbook/langgraph.md
+      - LlamaIndex: cookbook/llamaindex.md
+      - Hosted Vector Database: cookbook/hosted-vector-database.md
+      - Authentication: cookbook/authentication.md
+      - Observability: cookbook/observability.md
+      - Background Ingestion: cookbook/background-ingestion.md
+  - Providers: provider-examples.md
+  - Project:
+      - Documentation Site: documentation-site.md
+      - Releasing: releasing.md
+      - 0.2 Roadmap: roadmap-0.2.md
+      - MVP Status: mvp-roadmap.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+plugins:
+  - search

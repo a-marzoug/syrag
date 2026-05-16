@@ -4,9 +4,9 @@ LangChain is useful when you want chains, agents, tools, and runnable compositio
 
 The most production-friendly pattern is to run SyRAG as a service and call it from LangChain.
 
-The complete LangChain + Qdrant script is available at [`examples/integrations/langchain_qdrant_rag.py`](../../examples/integrations/langchain_qdrant_rag.py).
-The complete LangChain agent script is available at [`examples/integrations/langchain_syrag_agent.py`](../../examples/integrations/langchain_syrag_agent.py).
-The complete SyRAG route adapter script is available at [`examples/integrations/langchain_syrag_routes.py`](../../examples/integrations/langchain_syrag_routes.py).
+The complete LangChain + Qdrant script is available at [`examples/integrations/langchain_qdrant_rag.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/langchain_qdrant_rag.py).
+The complete LangChain agent script is available at [`examples/integrations/langchain_syrag_agent.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/langchain_syrag_agent.py).
+The complete SyRAG route adapter script is available at [`examples/integrations/langchain_syrag_routes.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/langchain_syrag_routes.py).
 
 ## Full LangChain + Qdrant RAG Pipeline
 
@@ -110,7 +110,7 @@ Install:
 pip install "syrag[chroma,langchain,openai,server]" langchain-openai langchain-qdrant qdrant-client
 ```
 
-The app in [`examples/integrations/langchain_syrag_routes.py`](../../examples/integrations/langchain_syrag_routes.py) wires a LangChain text splitter into `/ingest` and a LangChain Qdrant retriever into `/query`:
+The app in [`examples/integrations/langchain_syrag_routes.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/langchain_syrag_routes.py) wires a LangChain text splitter into `/ingest` and a LangChain Qdrant retriever into `/query`:
 
 ```python
 from langchain_text_splitters import RecursiveCharacterTextSplitter

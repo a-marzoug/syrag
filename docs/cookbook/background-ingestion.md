@@ -2,7 +2,7 @@
 
 SyRAG’s `@syrag.ingest(...)` decorator runs ingestion inline: normalize, chunk, embed, and store before returning the response. That is the right default for small batches and tests, but production document ingestion often needs a job boundary.
 
-The complete background ingestion example is available at [`examples/integrations/background_ingestion_app.py`](../../examples/integrations/background_ingestion_app.py).
+The complete background ingestion example is available at [`examples/integrations/background_ingestion_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/background_ingestion_app.py).
 
 ## In-Process Background Jobs
 

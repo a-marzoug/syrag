@@ -2,7 +2,7 @@
 
 This recipe shows a complete SyRAG vector-store adapter backed by Qdrant. Use this shape when you want SyRAG to own the API boundary while Qdrant stores and searches vectors.
 
-The complete script is available at [`examples/integrations/qdrant_syrag_app.py`](../../examples/integrations/qdrant_syrag_app.py).
+The complete script is available at [`examples/integrations/qdrant_syrag_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/qdrant_syrag_app.py).
 
 ## Install
 

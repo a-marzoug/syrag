@@ -56,7 +56,7 @@ def test_pyproject_declares_release_metadata() -> None:
     assert project["urls"] == {
         "Repository": "https://github.com/a-marzoug/syrag",
         "Issues": "https://github.com/a-marzoug/syrag/issues",
-        "Documentation": "https://github.com/a-marzoug/syrag/tree/main/docs",
+        "Documentation": "https://a-marzoug.github.io/syrag/",
     }
     assert "Programming Language :: Python :: 3.12" in project["classifiers"]
     assert "Programming Language :: Python :: 3.13" in project["classifiers"]

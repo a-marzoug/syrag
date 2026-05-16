@@ -2,7 +2,7 @@
 
 SyRAG authentication belongs in an `AuthHook`, not inside each ingest or query handler. That keeps request identity, tenant binding, structured auth failures, and observability context consistent across every route.
 
-The complete API-key example is available at [`examples/integrations/api_key_auth_app.py`](../../examples/integrations/api_key_auth_app.py).
+The complete API-key example is available at [`examples/integrations/api_key_auth_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/api_key_auth_app.py).
 
 ## API-Key Protected SyRAG App
 

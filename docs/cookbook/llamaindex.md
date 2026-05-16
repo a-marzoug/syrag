@@ -4,8 +4,8 @@ LlamaIndex is strong for data connectors, indexing workflows, and query engines.
 
 The cleanest production pattern is to let LlamaIndex prepare or retrieve data when needed, while SyRAG owns the API boundary.
 
-The complete LlamaIndex + Qdrant script is available at [`examples/integrations/llamaindex_qdrant_rag.py`](../../examples/integrations/llamaindex_qdrant_rag.py).
-The complete SyRAG route adapter script is available at [`examples/integrations/llamaindex_syrag_routes.py`](../../examples/integrations/llamaindex_syrag_routes.py).
+The complete LlamaIndex + Qdrant script is available at [`examples/integrations/llamaindex_qdrant_rag.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/llamaindex_qdrant_rag.py).
+The complete SyRAG route adapter script is available at [`examples/integrations/llamaindex_syrag_routes.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/llamaindex_syrag_routes.py).
 
 ## Full LlamaIndex + Qdrant RAG Pipeline
 
@@ -78,7 +78,7 @@ Install:
 pip install "syrag[chroma,llamaindex,openai,server]" llama-index-embeddings-openai llama-index-vector-stores-qdrant qdrant-client
 ```
 
-The app in [`examples/integrations/llamaindex_syrag_routes.py`](../../examples/integrations/llamaindex_syrag_routes.py) wires a LlamaIndex node parser into `/ingest` and a LlamaIndex Qdrant-backed retriever into `/query`:
+The app in [`examples/integrations/llamaindex_syrag_routes.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/llamaindex_syrag_routes.py) wires a LlamaIndex node parser into `/ingest` and a LlamaIndex Qdrant-backed retriever into `/query`:
 
 ```python
 from llama_index.core.node_parser import SentenceSplitter

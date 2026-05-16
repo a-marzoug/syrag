@@ -12,7 +12,7 @@ The cookbook shows how SyRAG fits into real application stacks. These recipes ar
 - [LangChain integration](./langchain.md)
 - [LangGraph RAG pipeline](./langgraph.md)
 - [LlamaIndex integration](./llamaindex.md)
-- SyRAG route adapter examples for LangChain and LlamaIndex are available in [`examples/integrations`](../../examples/integrations).
+- SyRAG route adapter examples for LangChain and LlamaIndex are available in [`examples/integrations`](https://github.com/a-marzoug/syrag/tree/main/examples/integrations).
 
 ## Integration Patterns
 
@@ -24,4 +24,4 @@ Use SyRAG in one of three ways:
 
 The service-boundary approach is usually the cleanest production shape. It keeps request context, tenant scoping, rate limiting, guardrails, observability, and errors inside SyRAG while still allowing LangChain, LlamaIndex, or agent frameworks to call it.
 
-Full scripts are also available in [`examples/integrations`](../../examples/integrations).
+Full scripts are also available in [`examples/integrations`](https://github.com/a-marzoug/syrag/tree/main/examples/integrations).
