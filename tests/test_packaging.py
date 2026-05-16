@@ -52,14 +52,13 @@ def test_pyproject_declares_release_metadata() -> None:
     assert syrag.__version__ == project["version"]
     assert project["license"] == "Apache-2.0"
     assert project["authors"] == [{"name": "A. Marzoug"}]
-    assert project["requires-python"] == ">=3.12,<3.14"
+    assert project["requires-python"] == ">=3.12"
     assert project["urls"] == {
         "Repository": "https://github.com/a-marzoug/syrag",
         "Issues": "https://github.com/a-marzoug/syrag/issues",
         "Documentation": "https://a-marzoug.github.io/syrag/",
     }
-    assert "Programming Language :: Python :: 3.12" in project["classifiers"]
-    assert "Programming Language :: Python :: 3.13" in project["classifiers"]
+    assert "Programming Language :: Python :: 3 :: Only" in project["classifiers"]
 
 
 def test_optional_dependency_error_mentions_install_extra() -> None:

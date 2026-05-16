@@ -2,7 +2,7 @@
 
 SyRAG keeps the core package small. Optional integrations live behind extras so applications only install the provider SDKs they use.
 
-Supported Python versions for the current release line are `3.12` and `3.13`.
+Supported Python versions for the current release line are `3.12+`.
 
 ## Core Package
 

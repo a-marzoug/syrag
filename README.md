@@ -29,7 +29,7 @@ It is designed for teams that want RAG APIs with clean provider boundaries, Open
 - Development/test providers and testing helpers for reliable local and CI workflows.
 - OpenAPI output, structured logging, and OpenTelemetry-compatible tracing.
 
-Supported Python versions: `3.12` and `3.13`.
+Supported Python versions: `3.12+`.
 
 ## Installation
 

@@ -11,7 +11,7 @@ license = "Apache-2.0"
 authors = [
     { name = "A. Marzoug" },
 ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 urls = { Repository = "https://github.com/a-marzoug/syrag", Issues = "https://github.com/a-marzoug/syrag/issues", Documentation = "https://a-marzoug.github.io/syrag/" }
 keywords = [
     "rag",
@@ -26,8 +26,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
     "Framework :: FastAPI",
     "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     "Topic :: Software Development :: Libraries :: Python Modules",
