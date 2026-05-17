@@ -4,14 +4,20 @@ Thanks for contributing to SyRAG.
 
 ## Development setup
 
-1. Install Python `3.12` or `3.13`.
+1. Install Python `3.12+`.
 2. Install dependencies with `uv sync`.
 3. Run checks before opening a change:
 
 ```bash
-env UV_CACHE_DIR=/tmp/uv-cache uv run ruff check .
-env UV_CACHE_DIR=/tmp/uv-cache uv run mypy .
-env UV_CACHE_DIR=/tmp/uv-cache uv run pytest
+uv run ruff check .
+uv run mypy .
+uv run pytest
+```
+
+Build the documentation site locally when changing files under `docs/`:
+
+```bash
+uv run --group docs mkdocs build --strict
 ```
 
 ## Scope
@@ -27,7 +33,7 @@ Contributions should preserve these project constraints:
 - include tests for behavior changes
 - update docs when the public API or package behavior changes
 - avoid unrelated refactors in the same change
-- keep compatibility claims aligned with the actual tested runtime matrix
+- keep compatibility claims aligned with package metadata, CI, and documented support policy
 
 ## Reporting issues
 
