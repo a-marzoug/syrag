@@ -82,7 +82,7 @@ from syrag.tracing import OpenTelemetryTracing
 try:
     __version__ = version("syrag")
 except PackageNotFoundError:  # pragma: no cover - only occurs from an unpackaged source tree
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
 __all__ = [
     "ComponentAlreadyRegisteredError",

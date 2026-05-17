@@ -4,6 +4,17 @@ All notable changes to SyRAG will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-17
+
+### Changed
+
+- Updated package metadata to advertise Python `3.12+` support without an upper bound.
+- Updated documentation metadata to point at the hosted documentation site.
+- Polished the public README with project badges, logo, and clearer community links.
+- Added MkDocs Material configuration for the hosted documentation site.
+- Added GitHub issue templates, pull request template, CODEOWNERS, Dependabot configuration, and support documentation.
+- Updated the documentation site branding to use the SyRAG logo color palette.
+
 ## [0.2.0] - 2026-05-12
 
 ### Added

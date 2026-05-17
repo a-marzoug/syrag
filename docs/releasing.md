@@ -14,7 +14,7 @@ Use these values:
 - Workflow name: `publish.yml`
 - Environment name: leave blank
 
-The workflow publishes when a version tag such as `v0.2.0` is pushed. It does not require a long-lived PyPI API token.
+The workflow publishes when a version tag such as `v0.2.1` is pushed. It does not require a long-lived PyPI API token.
 
 PyPI calls this Trusted Publishing. It uses GitHub Actions OpenID Connect, so the workflow must keep `id-token: write` permission on the publish job.
 
@@ -37,8 +37,8 @@ uvx twine check dist/*
 6. Create and push a version tag:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 7. Confirm the `Publish` GitHub Actions workflow completed successfully.

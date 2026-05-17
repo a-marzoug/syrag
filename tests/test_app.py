@@ -9,7 +9,7 @@ def test_create_app_returns_syrag_wrapper() -> None:
 
     assert isinstance(application, SyRAG)
     assert application.api.title == "SyRAG"
-    assert application.api.version == "0.2.0"
+    assert application.api.version == "0.2.1"
 
 
 @pytest.mark.asyncio
