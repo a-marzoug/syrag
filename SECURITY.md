@@ -4,9 +4,11 @@
 
 Please do not open a public issue for suspected security vulnerabilities.
 
-Until a dedicated security contact is published, report vulnerabilities
-privately to the maintainer through the repository host once the project is
-public.
+Report vulnerabilities privately through GitHub Security Advisories:
+
+```text
+https://github.com/a-marzoug/syrag/security/advisories/new
+```
 
 When reporting a vulnerability, include:
 
@@ -24,3 +26,7 @@ Security reports are most useful when they affect:
 - provider request handling
 - data leakage across query or ingest boundaries
 - denial-of-service or resource exhaustion paths
+
+## Supported Versions
+
+Security fixes target the latest published release unless a maintainer explicitly announces additional support windows.
