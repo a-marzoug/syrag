@@ -254,6 +254,7 @@ Full example scripts live in [examples/integrations](examples/integrations).
 ## Community
 
 - [Contributing guide](CONTRIBUTING.md)
+- [Support](SUPPORT.md)
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
