@@ -37,6 +37,57 @@ vector_store = ChromaVectorStore(
 llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
 ```
 
+## Qdrant Vector Store
+
+Use Qdrant when you want a production-oriented vector database that can run locally during development or remotely in a hosted deployment.
+
+Install:
+
+```bash
+pip install "syrag[qdrant,openai]"
+```
+
+Configure local embedded Qdrant:
+
+```python
+import os
+from pathlib import Path
+
+from syrag import OpenAIEmbedder, OpenAILLM, QdrantVectorStore, Settings, SyRAG
+
+api_key = os.environ["OPENAI_API_KEY"]
+
+syrag = SyRAG(
+    title="Support Bot",
+    version="0.3.0",
+    description="Qdrant-backed SyRAG app",
+    settings=Settings(),
+)
+
+embedder = OpenAIEmbedder(api_key=api_key, model="text-embedding-3-small")
+vector_store = QdrantVectorStore(
+    path=Path(".syrag/qdrant"),
+    collection_name="support_docs",
+    dimensions=1536,
+)
+llm = OpenAILLM(api_key=api_key, model="gpt-4.1-mini")
+```
+
+Configure remote Qdrant:
+
+```python
+import os
+
+from syrag import QdrantVectorStore
+
+vector_store = QdrantVectorStore(
+    url=os.environ["QDRANT_URL"],
+    api_key=os.environ.get("QDRANT_API_KEY"),
+    collection_name="support_docs",
+    dimensions=1536,
+)
+```
+
 ## FAISS Local Vector Store
 
 Use FAISS when you want a specialized local vector index without running a vector database service. SyRAG's FAISS adapter keeps metadata in process and rebuilds the local index on upserts, so use it for local apps, prototypes, and small deployments before moving to a durable remote vector database.

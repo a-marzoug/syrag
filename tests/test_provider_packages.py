@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import httpx
 import pytest
@@ -13,6 +14,7 @@ from syrag.providers import (
     GoogleLLM,
     OpenAIEmbedder,
     OpenAILLM,
+    QdrantVectorStore,
     SQLiteVectorStore,
 )
 from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
@@ -93,6 +95,80 @@ class FakeChromaClient:
         assert embedding_function is None
         self.collection_names.append(name)
         return self.collection
+
+
+class FakeQdrantClient:
+    def __init__(self) -> None:
+        self.collections: set[str] = set()
+        self.records: dict[str, dict[str, object]] = {}
+        self.last_query_filter: Any | None = None
+
+    def collection_exists(self, *, collection_name: str) -> bool:
+        return collection_name in self.collections
+
+    def create_collection(self, *, collection_name: str, vectors_config: object) -> None:
+        del vectors_config
+        self.collections.add(collection_name)
+
+    def upsert(
+        self,
+        *,
+        collection_name: str,
+        points: list[Any],
+        wait: bool,
+    ) -> None:
+        assert wait is True
+        self.collections.add(collection_name)
+        for point in points:
+            point_id = str(point.id)
+            self.records[point_id] = {
+                "id": point_id,
+                "vector": point.vector,
+                "payload": point.payload,
+            }
+
+    def query_points(
+        self,
+        *,
+        collection_name: str,
+        query: list[float],
+        query_filter: object,
+        limit: int,
+        with_payload: bool,
+    ) -> SimpleNamespace:
+        assert collection_name in self.collections
+        assert with_payload is True
+        self.last_query_filter = query_filter
+        matching_records = [
+            record
+            for record in self.records.values()
+            if self._matches_filter(record["payload"], query_filter)
+        ][:limit]
+        return SimpleNamespace(
+            points=[
+                SimpleNamespace(
+                    id=record["id"],
+                    payload=record["payload"],
+                    score=1.0,
+                )
+                for record in matching_records
+            ]
+        )
+
+    def _matches_filter(self, payload: object, query_filter: object) -> bool:
+        if not isinstance(payload, dict):
+            return False
+        conditions = getattr(query_filter, "must", None)
+        if not isinstance(conditions, list):
+            return True
+        return all(
+            payload.get(getattr(condition, "key", "")) == getattr(
+                getattr(condition, "match", None),
+                "value",
+                None,
+            )
+            for condition in conditions
+        )
 
 
 class FakeGoogleModels:
@@ -295,6 +371,112 @@ async def test_chroma_vector_store_maps_namespace_filters_and_metadata() -> None
     assert results[0].metadata == {"topic": "product", "nested": {"ignored": True}}
     assert results[0].page_number == 2
     assert results[0].score == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_qdrant_vector_store_maps_namespace_filters_and_metadata() -> None:
+    client = FakeQdrantClient()
+    store = QdrantVectorStore(client=client, collection_name="syrag_test", dimensions=2)
+
+    await store.upsert(
+        chunks=[
+            DocumentChunk(
+                chunk_id="product-chunk-0",
+                source_id="product",
+                content="SyRAG works with Qdrant.",
+                metadata={"topic": "product", "nested": {"ignored": True}},
+                page_number=2,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="transport-chunk-0",
+                source_id="transport",
+                content="FastAPI powers the HTTP layer.",
+                metadata={"topic": "transport"},
+                page_number=1,
+                chunk_index=0,
+            ),
+        ],
+        embeddings=[[1.0, 0.0], [0.0, 1.0]],
+        collection="overview",
+        tenant_id="tenant-a",
+    )
+
+    results = await store.query(
+        query_embedding=[1.0, 0.0],
+        top_k=2,
+        collection="overview",
+        tenant_id="tenant-a",
+        filters={"topic": "product", "nested": {"ignored": True}},
+    )
+
+    assert client.collections == {"syrag_test"}
+    assert client.last_query_filter is not None
+    conditions = client.last_query_filter.must
+    assert [(condition.key, condition.match.value) for condition in conditions] == [
+        ("syrag_collection", "overview"),
+        ("syrag_tenant", "tenant-a"),
+        ("meta__topic", "product"),
+    ]
+    assert len(results) == 1
+    assert results[0].chunk_id == "product-chunk-0"
+    assert results[0].source_id == "product"
+    assert results[0].content == "SyRAG works with Qdrant."
+    assert results[0].metadata == {"topic": "product", "nested": {"ignored": True}}
+    assert results[0].page_number == 2
+    assert results[0].score == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_qdrant_vector_store_supports_local_memory_mode() -> None:
+    store = QdrantVectorStore(collection_name="syrag_local_test", dimensions=2)
+
+    await store.upsert(
+        chunks=[
+            DocumentChunk(
+                chunk_id="product-chunk-0",
+                source_id="product",
+                content="SyRAG works with local Qdrant.",
+                metadata={"topic": "product"},
+                page_number=2,
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="transport-chunk-0",
+                source_id="transport",
+                content="FastAPI powers the HTTP layer.",
+                metadata={"topic": "transport"},
+                page_number=1,
+                chunk_index=0,
+            ),
+        ],
+        embeddings=[[1.0, 0.0], [0.0, 1.0]],
+        collection="overview",
+        tenant_id="tenant-a",
+    )
+
+    results = await store.query(
+        query_embedding=[1.0, 0.0],
+        top_k=2,
+        collection="overview",
+        tenant_id="tenant-a",
+        filters={"topic": "product"},
+    )
+    other_tenant_results = await store.query(
+        query_embedding=[1.0, 0.0],
+        top_k=2,
+        collection="overview",
+        tenant_id="tenant-b",
+    )
+
+    assert len(results) == 1
+    assert results[0].chunk_id == "product-chunk-0"
+    assert results[0].source_id == "product"
+    assert results[0].content == "SyRAG works with local Qdrant."
+    assert results[0].metadata == {"topic": "product"}
+    assert results[0].page_number == 2
+    assert results[0].score == pytest.approx(1.0)
+    assert other_tenant_results == []
 
 
 @pytest.mark.asyncio

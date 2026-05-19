@@ -18,6 +18,7 @@ def test_pyproject_declares_optional_extension_boundaries() -> None:
     assert optional_dependencies["chroma"] == ["chromadb>=1.0.0"]
     assert optional_dependencies["faiss"] == ["faiss-cpu>=1.8.0"]
     assert optional_dependencies["google"] == ["google-genai>=1.0.0"]
+    assert optional_dependencies["qdrant"] == ["qdrant-client>=1.16.0"]
     assert optional_dependencies["langchain"] == [
         "httpx>=0.28.1",
         "langchain-core>=1.0.0",
@@ -76,6 +77,8 @@ def test_optional_integrations_are_exported_when_installed() -> None:
     assert "ChromaVectorStore" in syrag.__all__
     assert "FAISSVectorStore" in provider_exports
     assert "FAISSVectorStore" in syrag.__all__
+    assert "QdrantVectorStore" in provider_exports
+    assert "QdrantVectorStore" in syrag.__all__
     assert "GoogleEmbedder" in provider_exports
     assert "GoogleEmbedder" in syrag.__all__
     assert "GoogleLLM" in provider_exports

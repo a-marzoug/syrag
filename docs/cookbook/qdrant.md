@@ -1,16 +1,16 @@
 # Qdrant Vector Store Pipeline
 
-This recipe shows a complete SyRAG vector-store adapter backed by Qdrant. Use this shape when you want SyRAG to own the API boundary while Qdrant stores and searches vectors.
+This recipe shows a complete SyRAG app using the first-party `QdrantVectorStore`. Use this when SyRAG owns the API boundary while Qdrant stores vectors and payloads.
 
 The complete script is available at [`examples/integrations/qdrant_syrag_app.py`](https://github.com/a-marzoug/syrag/blob/main/examples/integrations/qdrant_syrag_app.py).
 
 ## Install
 
 ```bash
-pip install "syrag[openai]" qdrant-client
+pip install "syrag[qdrant,openai,server]"
 ```
 
-For local development you can use Qdrant local mode. For production, run Qdrant separately and connect with `QdrantClient(url="http://localhost:6333")`.
+For local development, `QdrantVectorStore(path=".syrag/qdrant")` uses Qdrant local mode with persistent storage. For production, use `QdrantVectorStore(url="https://...", api_key="...")` to connect to a remote Qdrant deployment.
 
 ## Full Example
 
@@ -19,26 +19,19 @@ Create `qdrant_app.py`:
 ```python
 from __future__ import annotations
 
+import asyncio
 import os
-from collections.abc import Mapping, Sequence
-from typing import Any
-from uuid import uuid5, NAMESPACE_URL
+from pathlib import Path
 
-from qdrant_client import QdrantClient, models
 from syrag import (
-    DocumentChunk,
-    Embedder,
     IngestRequest,
-    LLM,
     OpenAIEmbedder,
     OpenAILLM,
+    QdrantVectorStore,
     QueryRequest,
-    RetrievedChunk,
     Settings,
     SyRAG,
-    VectorStore,
 )
-from syrag.protocols import EmbeddingVector
 
 OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 OPENAI_EMBEDDING_DIMENSIONS = 1536
@@ -47,132 +40,25 @@ QDRANT_COLLECTION = "support_docs"
 SUPPORT_COLLECTION = "support"
 
 
-class QdrantVectorStore(VectorStore):
-    def __init__(
-        self,
-        *,
-        client: QdrantClient,
-        collection_name: str,
-        vector_size: int,
-    ) -> None:
-        self.client = client
-        self.collection_name = collection_name
-        if not self.client.collection_exists(collection_name):
-            self.client.create_collection(
-                collection_name=collection_name,
-                vectors_config=models.VectorParams(
-                    size=vector_size,
-                    distance=models.Distance.COSINE,
-                ),
-            )
-
-    async def upsert(
-        self,
-        *,
-        chunks: Sequence[DocumentChunk],
-        embeddings: Sequence[EmbeddingVector],
-        collection: str | None = None,
-        tenant_id: str | None = None,
-    ) -> None:
-        points = [
-            models.PointStruct(
-                id=str(uuid5(NAMESPACE_URL, f"{collection}:{tenant_id}:{chunk.chunk_id}")),
-                vector=[float(value) for value in embedding],
-                payload={
-                    "chunk_id": chunk.chunk_id,
-                    "source_id": chunk.source_id,
-                    "content": chunk.content,
-                    "collection": collection or "",
-                    "tenant_id": tenant_id or "",
-                    "page_number": chunk.page_number,
-                    "chunk_index": chunk.chunk_index,
-                    "metadata": dict(chunk.metadata),
-                },
-            )
-            for chunk, embedding in zip(chunks, embeddings, strict=True)
-        ]
-        if points:
-            self.client.upsert(collection_name=self.collection_name, points=points)
-
-    async def query(
-        self,
-        *,
-        query_embedding: EmbeddingVector,
-        top_k: int,
-        collection: str | None = None,
-        tenant_id: str | None = None,
-        filters: Mapping[str, Any] | None = None,
-    ) -> list[RetrievedChunk]:
-        result = self.client.query_points(
-            collection_name=self.collection_name,
-            query=[float(value) for value in query_embedding],
-            query_filter=self._filter_for(collection, tenant_id, filters),
-            limit=top_k,
-            with_payload=True,
-        )
-        chunks: list[RetrievedChunk] = []
-        for point in result.points:
-            payload = point.payload or {}
-            metadata = payload.get("metadata", {})
-            chunks.append(
-                RetrievedChunk(
-                    chunk_id=str(payload["chunk_id"]),
-                    source_id=str(payload["source_id"]),
-                    content=str(payload["content"]),
-                    score=float(point.score or 0.0),
-                    metadata=metadata if isinstance(metadata, dict) else {},
-                    page_number=payload.get("page_number"),
-                    chunk_index=int(payload.get("chunk_index", 0)),
-                )
-            )
-        return chunks
-
-    def _filter_for(
-        self,
-        collection: str | None,
-        tenant_id: str | None,
-        filters: Mapping[str, Any] | None,
-    ) -> models.Filter:
-        must = [
-            models.FieldCondition(
-                key="collection",
-                match=models.MatchValue(value=collection or ""),
-            ),
-            models.FieldCondition(
-                key="tenant_id",
-                match=models.MatchValue(value=tenant_id or ""),
-            ),
-        ]
-        for key, value in (filters or {}).items():
-            if isinstance(value, str | int | float | bool):
-                must.append(
-                    models.FieldCondition(
-                        key=f"metadata.{key}",
-                        match=models.MatchValue(value=value),
-                    )
-                )
-        return models.Filter(must=must)
-
-
-def build_embedder() -> Embedder:
+def build_embedder() -> OpenAIEmbedder:
     return OpenAIEmbedder(
         api_key=os.environ["OPENAI_API_KEY"],
         model=OPENAI_EMBEDDING_MODEL,
     )
 
 
-def build_llm() -> LLM:
+def build_llm() -> OpenAILLM:
     return OpenAILLM(
         api_key=os.environ["OPENAI_API_KEY"],
         model=OPENAI_LLM_MODEL,
     )
 
 
-def build_vector_store() -> VectorStore:
+def build_vector_store() -> QdrantVectorStore:
     return QdrantVectorStore(
-        client=QdrantClient(path=".syrag/qdrant"),
+        path=Path(".syrag/qdrant"),
         collection_name=QDRANT_COLLECTION,
-        vector_size=OPENAI_EMBEDDING_DIMENSIONS,
+        dimensions=OPENAI_EMBEDDING_DIMENSIONS,
     )
 
 
@@ -183,7 +69,7 @@ async def build_app() -> SyRAG:
 
     syrag = SyRAG(
         title="Support Bot",
-        version="0.1.0",
+        version="0.3.0",
         description="SyRAG backed by Qdrant",
         settings=Settings(),
     )
@@ -207,26 +93,19 @@ async def build_app() -> SyRAG:
         )
 
     return syrag
+
+
+syrag_app = asyncio.run(build_app())
+app = syrag_app.api
 ```
 
-Create `main.py`:
-
-```python
-import asyncio
-
-from qdrant_app import build_app
-
-syrag = asyncio.run(build_app())
-app = syrag.api
-```
-
-Run:
+Run it:
 
 ```bash
-uvicorn main:app --reload
+uvicorn qdrant_app:app --reload
 ```
 
-Ingest:
+Ingest a document:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/ingest \
@@ -234,12 +113,11 @@ curl -X POST http://127.0.0.1:8000/ingest \
   -d '{
     "documents": ["Qdrant stores vectors and payloads for semantic retrieval."],
     "collection": "support",
-    "tenant_id": "tenant-a",
     "metadata": {"topic": "vector-store"}
   }'
 ```
 
-Query:
+Query it:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/query \
@@ -247,14 +125,13 @@ curl -X POST http://127.0.0.1:8000/query \
   -d '{
     "query": "What does Qdrant store?",
     "collection": "support",
-    "tenant_id": "tenant-a",
-    "filters": {"topic": "vector-store"},
-    "top_k": 3
+    "top_k": 3,
+    "filters": {"topic": "vector-store"}
   }'
 ```
 
-## Production Notes
+## Notes
 
-- Use `QdrantClient(url="...")` or `QdrantClient(host="...", port=6333)` for a server-backed deployment.
-- Keep `collection` and `tenant_id` in the Qdrant payload so SyRAG queries stay namespace-safe.
-- Keep model names, vector dimensions, and collection names as module-level settings so the app is easy to split into provider modules later.
+- `dimensions` must match the embedding model output size.
+- SyRAG stores logical `collection` and `tenant_id` values in Qdrant payload fields so route-level namespaces remain isolated.
+- Equality filters support Qdrant match values: strings, integers, and booleans. Nested metadata is preserved in returned chunks but not exposed as first-party equality filters.

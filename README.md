@@ -25,7 +25,7 @@ It is designed for teams that want RAG APIs with clean provider boundaries, Open
 - FastAPI-style `@app.ingest(...)` and `@app.query(...)` route decorators.
 - Typed schemas for ingest, retrieval, generation, citations, usage, and errors.
 - Protocol-first extension points for chunkers, embedders, vector stores, retrieval strategies, prompt assembly, generation policies, LLMs, hooks, rate limiters, and safety guards.
-- Optional integrations for OpenAI, Google, Chroma, FAISS, LangChain, and LlamaIndex.
+- Optional integrations for OpenAI, Google, Chroma, FAISS, Qdrant, LangChain, and LlamaIndex.
 - Development/test providers and testing helpers for reliable local and CI workflows.
 - OpenAPI output, structured logging, and OpenTelemetry-compatible tracing.
 
@@ -45,6 +45,7 @@ Optional integrations:
 pip install "syrag[chroma]"
 pip install "syrag[faiss]"
 pip install "syrag[google]"
+pip install "syrag[qdrant]"
 pip install "syrag[langchain]"
 pip install "syrag[llamaindex]"
 pip install "syrag[openai]"
@@ -185,6 +186,10 @@ Optional `chroma` extra:
 Optional `faiss` extra:
 
 - `FAISSVectorStore`
+
+Optional `qdrant` extra:
+
+- `QdrantVectorStore`
 
 Optional `google` extra:
 

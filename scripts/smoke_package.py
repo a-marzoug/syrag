@@ -57,6 +57,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "google",
             "chroma",
             "faiss",
+            "qdrant",
             "langchain",
             "llamaindex",
         ],
@@ -95,6 +96,7 @@ assert metadata.version("syrag") == syrag.__version__
 assert syrag.SyRAG.__name__ == "SyRAG"
 assert "OpenAIEmbedder" not in syrag.__all__
 assert "ChromaVectorStore" not in syrag.__all__
+assert "QdrantVectorStore" not in syrag.__all__
 """,
         ),
         SmokeCase(
@@ -133,6 +135,15 @@ assert ChromaVectorStore.__name__ == "ChromaVectorStore"
 from syrag import FAISSVectorStore
 
 assert FAISSVectorStore.__name__ == "FAISSVectorStore"
+""",
+        ),
+        SmokeCase(
+            name="qdrant",
+            install_target=f"{wheel_path}[qdrant]",
+            code="""
+from syrag import QdrantVectorStore
+
+assert QdrantVectorStore.__name__ == "QdrantVectorStore"
 """,
         ),
         SmokeCase(

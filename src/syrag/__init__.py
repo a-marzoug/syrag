@@ -174,6 +174,14 @@ else:
     __all__.extend(["FAISSVectorStore"])
 
 try:
+    from syrag.providers.qdrant import QdrantVectorStore
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update({"QdrantVectorStore": QdrantVectorStore})
+    __all__.extend(["QdrantVectorStore"])
+
+try:
     from syrag.providers.openai import OpenAIEmbedder, OpenAILLM
 except ModuleNotFoundError:
     pass

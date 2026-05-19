@@ -2,6 +2,7 @@ import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import httpx
 import pytest
@@ -17,6 +18,7 @@ from syrag.providers import (
     InMemoryVectorStore,
     OpenAIEmbedder,
     OpenAILLM,
+    QdrantVectorStore,
     SQLiteVectorStore,
 )
 from syrag.schemas import DocumentChunk, GenerationRequest, QueryRequest, RetrievedChunk
@@ -96,6 +98,88 @@ class FakeChromaClient:
         del name
         assert embedding_function is None
         return self.collection
+
+
+class FakeQdrantClient:
+    def __init__(self) -> None:
+        self.collections: set[str] = set()
+        self.records: dict[str, dict[str, object]] = {}
+
+    def collection_exists(self, *, collection_name: str) -> bool:
+        return collection_name in self.collections
+
+    def create_collection(self, *, collection_name: str, vectors_config: object) -> None:
+        del vectors_config
+        self.collections.add(collection_name)
+
+    def upsert(
+        self,
+        *,
+        collection_name: str,
+        points: list[Any],
+        wait: bool,
+    ) -> None:
+        assert wait is True
+        self.collections.add(collection_name)
+        for point in points:
+            point_id = str(point.id)
+            self.records[point_id] = {
+                "id": point_id,
+                "vector": point.vector,
+                "payload": point.payload,
+            }
+
+    def query_points(
+        self,
+        *,
+        collection_name: str,
+        query: list[float],
+        query_filter: object,
+        limit: int,
+        with_payload: bool,
+    ) -> SimpleNamespace:
+        assert collection_name in self.collections
+        assert with_payload is True
+        matching_records = [
+            record
+            for record in self.records.values()
+            if self._matches_filter(record["payload"], query_filter)
+        ]
+        scored_records = sorted(
+            matching_records,
+            key=lambda record: self._score(query, record["vector"]),
+            reverse=True,
+        )[:limit]
+        return SimpleNamespace(
+            points=[
+                SimpleNamespace(
+                    id=record["id"],
+                    payload=record["payload"],
+                    score=self._score(query, record["vector"]),
+                )
+                for record in scored_records
+            ]
+        )
+
+    def _matches_filter(self, payload: object, query_filter: object) -> bool:
+        if not isinstance(payload, dict):
+            return False
+        conditions = getattr(query_filter, "must", None)
+        if not isinstance(conditions, list):
+            return True
+        return all(
+            payload.get(getattr(condition, "key", "")) == getattr(
+                getattr(condition, "match", None),
+                "value",
+                None,
+            )
+            for condition in conditions
+        )
+
+    def _score(self, query: list[float], vector: object) -> float:
+        if not isinstance(vector, list):
+            return 0.0
+        return float(sum(left * right for left, right in zip(query, vector, strict=True)))
 
 
 class FakeGoogleModels:
@@ -183,6 +267,10 @@ async def _build_faiss_vector_store() -> VectorStore:
     return FAISSVectorStore(dimensions=2)
 
 
+async def _build_qdrant_vector_store() -> VectorStore:
+    return QdrantVectorStore(client=FakeQdrantClient(), dimensions=2)
+
+
 async def _build_in_memory_llm() -> LLM:
     return InMemoryLLM()
 
@@ -245,7 +333,7 @@ async def test_embedder_contract_returns_one_float_vector_per_input(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite", "chroma", "faiss"])
+@pytest.mark.parametrize("provider_name", ["in_memory", "sqlite", "chroma", "faiss", "qdrant"])
 async def test_vector_store_contract_supports_namespace_filters_and_upsert_replacement(
     provider_name: str,
     tmp_path: Path,
@@ -256,8 +344,10 @@ async def test_vector_store_contract_supports_namespace_filters_and_upsert_repla
         store = await _build_sqlite_vector_store(tmp_path)
     elif provider_name == "chroma":
         store = await _build_chroma_vector_store()
-    else:
+    elif provider_name == "faiss":
         store = await _build_faiss_vector_store()
+    else:
+        store = await _build_qdrant_vector_store()
 
     await store.upsert(
         chunks=[
