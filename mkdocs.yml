@@ -60,6 +60,7 @@ nav:
       - Documentation Site: documentation-site.md
       - Releasing: releasing.md
       - 0.2 Roadmap: roadmap-0.2.md
+      - 0.3 Roadmap: roadmap-0.3.md
       - MVP Status: mvp-roadmap.md
 
 markdown_extensions:
